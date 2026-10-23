@@ -1,3 +1,4 @@
+import 'package:kazumi/tv/input/tv_remote_input_address.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:kazumi/request/config/api_endpoints.dart';
@@ -83,6 +84,7 @@ class TvSettingsPage extends StatelessWidget {
             '打开上游完整设置界面',
             '/settings',
           ),
+          const TvRemoteInputAddress(),
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 12),
             child: Text(

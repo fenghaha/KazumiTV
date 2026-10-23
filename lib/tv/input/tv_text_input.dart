@@ -1,3 +1,6 @@
+import 'package:kazumi/tv/input/remote_input_service.dart';
+import 'package:kazumi/tv/tv_mode.dart';
+
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -50,6 +53,36 @@ class _TvTextInputState extends State<TvTextInput> {
   final _qrFocus = FocusNode(debugLabel: 'TV phone input');
   bool _focused = false;
   bool _editing = false;
+  RemoteInputLease? _remoteLease;
+
+  void _connectRemote() {
+    _remoteLease?.close();
+    if (!TvMode.enabled ||
+        RemoteInputService.instance.url == null ||
+        !_focused ||
+        !widget.enabled ||
+        _editing)
+      return;
+    unawaited(
+      RemoteInputService.instance.ensureStarted().then((_) {
+        if (!mounted || !_focused || !widget.enabled || _editing) return;
+        _remoteLease = RemoteInputService.instance.attach(
+          title: _title,
+          text: () => widget.controller.text,
+          obscureText: widget.obscureText,
+          maxLength: _maxLength,
+          canApply: () =>
+              mounted &&
+              _focused &&
+              widget.enabled &&
+              !_editing &&
+              (ModalRoute.of(context)?.isCurrent ?? false),
+          onInput: (text, submit) => _apply(text),
+          onSubmit: () => widget.onSubmitted?.call(widget.controller.text),
+        );
+      }, onError: (Object _) {}),
+    );
+  }
 
   FocusNode get _focus => widget.focusNode ?? _ownedFocus;
   String get _title => widget.label ?? widget.hintText ?? '输入文字';
@@ -57,6 +90,7 @@ class _TvTextInputState extends State<TvTextInput> {
 
   @override
   void dispose() {
+    _remoteLease?.close();
     _ownedFocus.dispose();
     _qrFocus.dispose();
     super.dispose();
@@ -185,7 +219,9 @@ class _TvTextInputState extends State<TvTextInput> {
     }
     if (!mounted) return;
     // The phone dialog has closed before this callback can navigate elsewhere.
-    if (result != null && widget.enabled) widget.onSubmitted?.call(widget.controller.text);
+    if (result != null && widget.enabled) {
+      widget.onSubmitted?.call(widget.controller.text);
+    }
   }
 
   @override
@@ -213,6 +249,7 @@ class _TvTextInputState extends State<TvTextInput> {
                 onTap: widget.enabled && !_editing ? _edit : null,
                 onFocusChange: (focused) {
                   if (mounted) setState(() => _focused = focused);
+                  _connectRemote();
                   if (focused) {
                     Scrollable.ensureVisible(
                       context,
@@ -397,6 +434,8 @@ class _PhoneEditor extends StatefulWidget {
 
 class _PhoneEditorState extends State<_PhoneEditor> {
   RemoteInputSession? _session;
+  RemoteInputLease? _lease;
+  Uri? _fixedUrl;
   StreamSubscription<void>? _subscription;
   bool _loading = true;
   bool _starting = false;
@@ -412,6 +451,8 @@ class _PhoneEditorState extends State<_PhoneEditor> {
   Future<void> _start() async {
     if (_starting) return;
     _starting = true;
+    _lease?.close();
+    _lease = null;
     setState(() => _loading = true);
     await _subscription?.cancel();
     await _session?.close();
@@ -422,6 +463,9 @@ class _PhoneEditorState extends State<_PhoneEditor> {
       _session = null;
     });
     try {
+      if (TvMode.enabled) {
+        _fixedUrl = await RemoteInputService.instance.ensureStarted();
+      }
       final session = await RemoteInputSession.start(
         title: widget.title,
         initialText: widget.controller.text,
@@ -448,6 +492,29 @@ class _PhoneEditorState extends State<_PhoneEditor> {
         return;
       }
       _session = session;
+      if (TvMode.enabled) {
+        _lease?.close();
+        _lease = RemoteInputService.instance.attach(
+          title: widget.title,
+          text: () => widget.controller.text,
+          obscureText: widget.obscureText,
+          maxLength: widget.maxLength,
+          canApply: () =>
+              mounted &&
+              !_loading &&
+              widget.canApply() &&
+              (ModalRoute.of(context)?.isCurrent ?? false),
+          onInput: (text, submit) {
+            widget.controller.text = text;
+            widget.onChanged?.call(text);
+            if (submit) _submittedText = text;
+            return true;
+          },
+          onSubmit: () {
+            if (mounted) Navigator.of(context).pop(_submittedText);
+          },
+        );
+      }
       _subscription = session.submitted.listen(
         (_) {
           if (mounted && (ModalRoute.of(context)?.isCurrent ?? false)) {
@@ -456,6 +523,7 @@ class _PhoneEditorState extends State<_PhoneEditor> {
         },
         onDone: () {
           if (mounted && _session == session) {
+            _lease?.close();
             setState(() => _error = '二维码已失效，请刷新后重新扫码');
           }
         },
@@ -476,6 +544,7 @@ class _PhoneEditorState extends State<_PhoneEditor> {
   @override
   void dispose() {
     unawaited(_subscription?.cancel());
+    _lease?.close();
     unawaited(_session?.close());
     super.dispose();
   }
@@ -501,14 +570,16 @@ class _PhoneEditorState extends State<_PhoneEditor> {
                 color: Colors.white,
                 padding: const EdgeInsets.all(12),
                 child: QrImageView(
-                  data: _session!.url.toString(),
+                  data: (_fixedUrl ?? _session!.url).toString(),
                   size: 240,
                   backgroundColor: Colors.white,
                 ),
               ),
             const SizedBox(height: 20),
+            if (_fixedUrl != null)
+              SelectableText(_fixedUrl.toString(), textAlign: TextAlign.center),
             const Text(
-              '手机与电视连接同一网络，扫码后输入。\n关闭此窗口即结束连接。',
+              '手机或电脑连接同一网络，打开上方地址即可输入。可收藏地址，下次无需扫码。',
               textAlign: TextAlign.center,
               style: TextStyle(height: 1.5, fontSize: 18),
             ),

@@ -56,7 +56,7 @@ class RemoteInputSession {
     Duration lifetime = const Duration(minutes: 10),
     Future<InternetAddress?> Function()? addressProvider,
   }) async {
-    final address = await (addressProvider ?? _lanAddress)();
+    final address = await (addressProvider ?? lanAddress)();
     if (address == null) {
       throw const SocketException('No local network address');
     }
@@ -78,7 +78,7 @@ class RemoteInputSession {
     );
   }
 
-  static Future<InternetAddress?> _lanAddress() async {
+  static Future<InternetAddress?> lanAddress() async {
     if (Platform.isAndroid) {
       try {
         final networks = await const MethodChannel(

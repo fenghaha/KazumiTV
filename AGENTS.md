@@ -16,7 +16,7 @@ This is a downstream presentation branch of Predidit/Kazumi. The user chose a ci
 
 - Directional navigation, visible focus, automatic scroll and focus restoration are required. Do not depend on touch or a vendor-specific remote button.
 - Use `TvTextInput` for TV inputs: Android EditText owns the IME; browsing focus and editing focus are distinct. Never globally steal keys from an IME or a modal.
-- QR input is optional and short-lived. Do not log entered text/tokens; revoke sessions on close, honor disabled state and rediscover LAN addresses.
+- Remote input uses the fixed LAN port 8765 while the TV app runs; QR is an optional shortcut to the same root page. Revoke field leases on blur/close/disposal, reject stale-field requests, honor disabled/current-route state, rediscover physical LAN addresses and never log entered text/tokens. Do not restore per-dialog random browser addresses as the TV entry point.
 - Check 960×540 and 1280×720 logical layouts. Do not infer the projector/TV ABI or Android version from its name.
 
 ## Verification and records
