@@ -1,0 +1,25 @@
+// Keep downstream packaging independent from upstream's Android build file.
+android {
+    flavorDimensions "presentation"
+    productFlavors {
+        livingroom {
+            dimension "presentation"
+            applicationId "com.fenghaha.kazumitv"
+        }
+    }
+    def signingPath = System.getenv("KAZUMI_TV_KEY_PROPERTIES")
+    if (signingPath) {
+        def signing = new Properties()
+        new File(signingPath).withInputStream { signing.load(it) }
+        signingConfigs {
+            livingroom {
+                storeFile new File(signing["storeFile"])
+                storePassword signing["storePassword"]
+                keyAlias signing["keyAlias"]
+                keyPassword signing["keyPassword"]
+            }
+        }
+        // buildType wins over flavor signing; override upstream's debug key.
+        buildTypes.release.signingConfig signingConfigs.livingroom
+    }
+}

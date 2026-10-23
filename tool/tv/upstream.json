@@ -1,0 +1,9 @@
+{
+  "repository": "https://github.com/Predidit/Kazumi",
+  "remote": "upstream",
+  "branch": "main",
+  "commit": "db5202611902fe67c449e0a53bc05c3a75b4e8b0",
+  "version": "2.4.1+20401",
+  "apiLevel": 9,
+  "presentationRevision": 1
+}

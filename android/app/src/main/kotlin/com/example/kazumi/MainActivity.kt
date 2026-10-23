@@ -107,6 +107,7 @@ class MainActivity: AudioServiceActivity() {
 
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        TvPlatformHandler.register(this, flutterEngine)
         downloadDirectoryHandler = DownloadDirectoryHandler(this)
         downloadDirectoryChannel = MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger, DownloadDirectoryHandler.CHANNEL

@@ -1,5 +1,8 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:kazumi/tv/tv_mode.dart';
+import 'package:kazumi/tv/player/tv_episode_picker.dart';
+import 'package:kazumi/tv/player/tv_player_controls.dart';
 import 'package:kazumi/pages/player/player_item_panel.dart';
 import 'package:kazumi/pages/player/player_keyboard_shortcuts.dart';
 import 'package:kazumi/pages/player/controller/player_super_resolution.dart';
@@ -1375,6 +1378,40 @@ class _PlayerItemState extends State<PlayerItem>
     super.dispose();
   }
 
+  Future<void> _showTvEpisodes() async {
+    final selection = videoPageController.selectedEpisode;
+    final next = await showTvEpisodePicker(
+      context,
+      roads: videoPageController.roadList,
+      selectedRoad: selection.road,
+      selectedEpisode: selection.episode,
+    );
+    if (!mounted || next == null ||
+        (next.episode == selection.episode && next.road == selection.road)) {
+      return;
+    }
+    await widget.changeEpisode(next.episode, currentRoad: next.road);
+  }
+
+  Widget _buildTvControls() => TvPlayerControls(
+        playbackFocus: widget.keyboardFocus,
+        title: videoPageController.title,
+        playing: playerController.playback.playing,
+        position: playerController.playback.currentPosition,
+        duration: playerController.playback.duration,
+        danmakuEnabled: playerController.danmaku.danmakuOn,
+        busy: videoPageController.loading || playerController.playback.loading,
+        onTogglePlayback: () => playerController.playOrPause(),
+        onSeek: (position) => playerController.seek(position),
+        onSeekBy: (offset) => playerController.seekBy(offset),
+        onEpisodes: _showTvEpisodes,
+        onNext: () => handlePreNextEpisode('next'),
+        onToggleDanmaku: handleDanmaku,
+        onDanmakuSources: showDanmakuSwitch,
+        onDetails: showVideoInfo,
+        onBack: widget.onBackPressed,
+      );
+
   @override
   Widget build(BuildContext context) {
     return Observer(
@@ -1414,7 +1451,7 @@ class _PlayerItemState extends State<PlayerItem>
                 },
                 child: SizedBox.expand(
                   child: Stack(alignment: Alignment.center, children: [
-                    PlayerKeyboardShortcuts(
+                    if (!TvMode.enabled) PlayerKeyboardShortcuts(
                       focusScopeNode: widget.keyboardFocus,
                       actions: keyboardActions,
                       longPressActions: keyboardLongPressActions,
@@ -1434,7 +1471,7 @@ class _PlayerItemState extends State<PlayerItem>
                             ),
                           )
                         : Container(),
-                    GestureDetector(
+                    if (!TvMode.enabled) GestureDetector(
                       onTapDown: (details) {
                         _lastTapPointerKind = details.kind;
                       },
@@ -1521,7 +1558,7 @@ class _PlayerItemState extends State<PlayerItem>
                     (Platform.isAndroid &&
                             (videoPageController.isPip || _pipEnterRequested))
                         ? const SizedBox.shrink()
-                        : PlayerItemPanel(
+                        : TvMode.enabled ? _buildTvControls() : PlayerItemPanel(
                             fillsWindow: widget.fillsWindow,
                             playerController: playerController,
                             videoPageController: videoPageController,
@@ -1558,7 +1595,7 @@ class _PlayerItemState extends State<PlayerItem>
                       top: 25,
                       right: 15,
                       bottom: 15,
-                      child: (isDesktop() || playerController.panel.lockPanel)
+                      child: (TvMode.enabled || isDesktop() || playerController.panel.lockPanel)
                           ? Container()
                           : PlayerGestureDetector(
                               onSeekStart: () {

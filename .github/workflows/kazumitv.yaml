@@ -1,0 +1,40 @@
+name: KazumiTV checks
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/kazumitv]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  television:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2.16.0
+        with:
+          channel: stable
+          flutter-version-file: pubspec.yaml
+          cache: true
+      - name: Host build dependencies
+        run: sudo apt-get update && sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev
+      - run: flutter pub get
+      - run: python3 tool/tv/check_upstream.py
+      - run: flutter analyze --no-fatal-infos
+      - run: flutter test --concurrency=1
+      - name: Match upstream JNI build-id workaround
+        run: sed -i -e 's/-Wl,/-Wl,--build-id=none,/' "$HOME"/.pub-cache/hosted/pub.dev/jni-*/src/CMakeLists.txt
+      - run: bash tool/tv/build.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: KazumiTV-development-apks
+          path: build/app/outputs/flutter-apk/*-livingroom-release.apk

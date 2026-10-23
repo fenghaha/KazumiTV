@@ -23,6 +23,7 @@ import 'package:kazumi/services/platform/desktop_window_config.dart';
 import 'package:kazumi/services/platform/webview_feature_service.dart';
 import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:kazumi/navigation.dart';
+import 'package:kazumi/tv/tv_mode.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -41,6 +42,7 @@ void main() async {
   if (Platform.isAndroid) {
     await WebViewFeatureService.initialize();
   }
+  await TvMode.initialize();
 
   try {
     final hivePath = '${(await getApplicationSupportDirectory()).path}/hive';

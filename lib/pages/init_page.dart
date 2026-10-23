@@ -19,6 +19,7 @@ import 'package:kazumi/services/platform/windows_shortcut.dart';
 import 'package:kazumi/services/platform/platform_environment_service.dart';
 import 'package:kazumi/services/update/startup_update_check.dart';
 import 'package:kazumi/navigation.dart';
+import 'package:kazumi/tv/tv_mode.dart';
 
 class InitPage extends StatefulWidget {
   const InitPage({
@@ -85,7 +86,7 @@ class _InitPageState extends State<InitPage> {
 
     final updateController = myController;
     unawaited(runStartupUpdateCheck(
-      isEnabled: () => GStorage.getSetting(SettingsKeys.autoUpdate),
+      isEnabled: () => !TvMode.enabled && GStorage.getSetting(SettingsKeys.autoUpdate),
       checkForUpdate: () => updateController.checkUpdate(type: 'auto'),
     ));
     context.navigate(GStorage.getSetting(SettingsKeys.defaultStartupPage));

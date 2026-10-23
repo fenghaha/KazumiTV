@@ -16,6 +16,8 @@ import 'package:kazumi/navigation.dart';
 import 'package:kazumi/utils/constants.dart';
 import 'package:kazumi/utils/device.dart';
 import 'package:kazumi/utils/theme.dart';
+import 'package:kazumi/tv/tv_mode.dart';
+import 'package:kazumi/tv/tv_theme.dart';
 
 class AppWidget extends StatefulWidget {
   const AppWidget({super.key});
@@ -302,7 +304,7 @@ class _AppWidgetState extends State<AppWidget>
             : dynamicDarkTheme;
 
         return MaterialApp.router(
-          title: "Kazumi",
+          title: TvMode.enabled ? 'KazumiTV' : 'Kazumi',
           localizationsDelegates: GlobalMaterialLocalizations.delegates,
           supportedLocales: const [
             Locale.fromSubtags(
@@ -310,9 +312,9 @@ class _AppWidgetState extends State<AppWidget>
           ],
           locale: const Locale.fromSubtags(
               languageCode: 'zh', scriptCode: 'Hans', countryCode: "CN"),
-          theme: lightTheme,
-          darkTheme: effectiveDarkTheme,
-          themeMode: themeProvider.themeMode,
+          theme: TvMode.enabled ? TvTheme.dark : lightTheme,
+          darkTheme: TvMode.enabled ? TvTheme.dark : effectiveDarkTheme,
+          themeMode: TvMode.enabled ? ThemeMode.dark : themeProvider.themeMode,
           scaffoldMessengerKey: rootScaffoldMessengerKey,
           routerConfig: ModularApp.routerConfigOf(context),
         );

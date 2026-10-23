@@ -23,6 +23,10 @@ import 'package:kazumi/pages/my/my_controller.dart';
 import 'package:kazumi/pages/download/download_controller.dart';
 import 'package:kazumi/services/shaders/shader_asset_service.dart';
 import 'package:kazumi/services/sync/danmaku_shield_sync_service.dart';
+import 'package:kazumi/tv/tv_mode.dart';
+import 'package:kazumi/tv/settings/tv_settings_page.dart';
+import 'package:kazumi/tv/settings/tv_rules_page.dart';
+import 'package:kazumi/tv/onboarding/tv_welcome_page.dart';
 
 final _tabTransition = CustomTransition(
   duration: const Duration(milliseconds: 70),
@@ -84,7 +88,9 @@ final indexModule = createModule(
       )
       ..route(
         '/onboarding',
-        child: (context, state) => OnboardingPage(
+        child: (context, state) => TvMode.enabled
+            ? TvWelcomePage(pluginsController: inject<PluginsController>())
+            : OnboardingPage(
           pluginsController: inject<PluginsController>(),
           myController: inject<MyController>(),
         ),
@@ -100,6 +106,10 @@ final indexModule = createModule(
           ),
         ),
       )
+      ..route('/tv/settings', child: (context, state) => const TvSettingsPage())
+      ..route('/tv/rules', child: (context, state) => TvRulesPage(
+        controller: inject<PluginsController>(),
+      ))
       ..module(tabModule)
       ..module(videoModule)
       ..route(

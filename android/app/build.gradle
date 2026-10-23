@@ -60,6 +60,12 @@ android {
             signingConfig signingConfigs.debug
         }
     }
+
+}
+
+// Opt-in overlay: upstream's unflavored build remains unchanged.
+if (System.getenv("KAZUMI_BUILD_TV") == "1") {
+    apply from: rootProject.file("tv.gradle")
 }
 
 flutter {
