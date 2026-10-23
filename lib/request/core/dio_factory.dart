@@ -11,6 +11,7 @@ class DioFactory {
   DioFactory._();
 
   static Dio? _apiDio;
+  static Dio? _danmakuCustomDio;
   static Dio? _bangumiDio;
   static Dio? _rulesRepoDio;
   static Dio? _pluginDio;
@@ -19,6 +20,13 @@ class DioFactory {
   static Dio get apiDio => _apiDio ??= _create(
     NetworkConfig.fromSettings(),
     defaultHeaders: {'referer': '', 'user-agent': getRandomUA()},
+  );
+
+  // Compatible APIs can use a private path token. Pool connections without
+  // installing the URL logger, and retire this client with other network state.
+  static Dio get danmakuCustomDio => _danmakuCustomDio ??= _create(
+    NetworkConfig.fromSettings(receiveTimeout: const Duration(seconds: 45))
+        .copyWith(enableLog: false),
   );
 
   static Dio get bangumiDio {
@@ -65,11 +73,13 @@ class DioFactory {
   static void reset() {
     // Retire old adapters without interrupting requests already in flight.
     _apiDio?.close();
+    _danmakuCustomDio?.close();
     _bangumiDio?.close();
     _rulesRepoDio?.close();
     _pluginDio?.close();
     _downloadDio?.close();
     _apiDio = null;
+    _danmakuCustomDio = null;
     _bangumiDio = null;
     _rulesRepoDio = null;
     _pluginDio = null;

@@ -1,7 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:kazumi/request/core/dio_factory.dart';
 import 'package:kazumi/request/core/network_error_mapper.dart';
-import 'package:kazumi/request/core/network_config.dart';
 import 'package:kazumi/services/network/danmaku_server.dart';
 import 'package:kazumi/utils/dandan_credentials.dart';
 import 'package:kazumi/utils/http_headers.dart';
@@ -36,13 +35,8 @@ class DanmakuClient {
       ...headers,
     };
 
-    // Custom bases can contain a private path token; use a non-logging client.
-    final custom = official ? null : DioFactory.createForConfig(
-      NetworkConfig.fromSettings(receiveTimeout: const Duration(seconds: 45))
-          .copyWith(enableLog: false),
-    );
     try {
-      final response = await (custom ?? DioFactory.apiDio).get(
+      final response = await (official ? DioFactory.apiDio : DioFactory.danmakuCustomDio).get(
         url,
         queryParameters: queryParameters,
         options: Options(headers: requestHeaders),
@@ -55,8 +49,6 @@ class DanmakuClient {
         throw Exception('自建弹幕服务请求失败（${e.response?.statusCode ?? e.type.name}）');
       }
       throw await NetworkErrorMapper.mapException(e);
-    } finally {
-      custom?.close();
     }
   }
 }

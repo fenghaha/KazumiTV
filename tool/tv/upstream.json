@@ -12,12 +12,16 @@
       "reason": "2026-10-24 user-requested optional self-hosted danmaku: endpoint selection, isolated auth and real episode IDs; official flow and rule/version/API contracts retained"
     },
     "lib/request/clients/danmaku_client.dart": {
-      "sha256": "8dbbdc286de84079eb3faf518a38ab7fc5e667c7afd3fe590c2af38d2fe0e9f6",
+      "sha256": "dac808de4af30429fe13f3cf5c6d04bc914ced88a21e9c0021ad22e51a8a146b",
       "reason": "2026-10-24 user-requested optional self-hosted danmaku: endpoint selection, isolated auth and real episode IDs; official flow and rule/version/API contracts retained"
     },
     "lib/services/storage/settings_keys.dart": {
       "sha256": "6221c23c13f2489797f03efda1cf4b4515872e06f1e312b7e773f4777c5eaff4",
       "reason": "2026-10-24 user-requested optional self-hosted danmaku: endpoint selection, isolated auth and real episode IDs; official flow and rule/version/API contracts retained"
+    },
+    "lib/request/core/dio_factory.dart": {
+      "reason": "2026-10-24 self-hosted danmaku transport: pooled non-logging client follows network reset; shared factory supports deterministic fake transport regression",
+      "sha256": "31a10a674b0cb9c024afb63cf145dd206b6ca880505bb699bd00597a86772005"
     }
   }
 }

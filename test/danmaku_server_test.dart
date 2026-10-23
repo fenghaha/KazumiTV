@@ -1,7 +1,16 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kazumi/services/network/danmaku_server.dart';
+import 'package:kazumi/request/clients/danmaku_client.dart';
+import 'package:kazumi/utils/dandan_credentials.dart';
 
 void main() {
+  test('an unconfigured official build fails before issuing a network request', () async {
+    if (dandanCredentials['id']!.isNotEmpty && dandanCredentials['value']!.isNotEmpty) return;
+    await expectLater(
+      DanmakuClient.instance.get('https://api.dandanplay.net/api/v2/search/episodes'),
+      throwsA(isA<DanmakuConfigurationException>()),
+    );
+  });
   test('Bangumi aliases bridge exact naming differences without fuzzy seasons', () {
     final rows = [
       {'animeId': 3884, 'animeTitle': '东京食尸鬼(2014)【TV动画】from bahamut'},

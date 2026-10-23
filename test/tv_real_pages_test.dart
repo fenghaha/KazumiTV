@@ -37,6 +37,7 @@ class _UnusedDownloads implements DownloadController {
 
 class _Adapter implements HttpClientAdapter {
   String? keyword;
+  Map<String, dynamic> headers = {};
   @override
   Future<ResponseBody> fetch(
     RequestOptions options,
@@ -44,6 +45,7 @@ class _Adapter implements HttpClientAdapter {
     Future<void>? cancelFuture,
   ) async {
     keyword = options.queryParameters['anime'] as String?;
+    headers = options.headers;
     return ResponseBody.fromString(
       '{"animes":[],"hasMore":false}',
       200,
@@ -165,12 +167,14 @@ void main() {
     'actual player danmaku search opens native editor, cancel stays in sheet, submitted text reaches request',
     (tester) async {
       await tester.runAsync(() => GStorage.putSetting(SettingsKeys.privateMode, true));
+      await tester.runAsync(() => GStorage.putSetting(
+          SettingsKeys.danmakuApiBaseUrl, 'https://fixture.invalid/danmaku'));
       final controller = PlayerDanmakuController(
         isLocalPlayback: () => false,
         downloadController: _UnusedDownloads(),
       );
       final adapter = _Adapter();
-      DioFactory.apiDio.httpClientAdapter = adapter;
+      DioFactory.danmakuCustomDio.httpClientAdapter = adapter;
       String? result;
       var edits = 0;
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
@@ -211,6 +215,10 @@ void main() {
       await tester.pumpAndSettle();
       expect(edits, 2);
       expect(adapter.keyword, '新的搜索词');
+      expect(adapter.headers.keys.map((k) => k.toLowerCase()),
+          isNot(contains('x-appid')));
+      expect(adapter.headers.keys.map((k) => k.toLowerCase()),
+          isNot(contains('x-signature')));
       expect(find.text('未找到番剧'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
