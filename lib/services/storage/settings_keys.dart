@@ -191,6 +191,11 @@ class SettingsKeys {
     false,
     group: SettingGroup.danmaku,
   );
+  static const danmakuApiBaseUrl = SettingKey<String>(
+    'danmakuApiBaseUrl',
+    String.fromEnvironment('KAZUMI_DANMAKU_BASE_URL'),
+    group: SettingGroup.danmaku,
+  );
   static const danmakuBiliBiliSource = SettingKey<bool>(
     _SettingBoxKey.danmakuBiliBiliSource,
     true,
@@ -601,6 +606,7 @@ class SettingsKeys {
     danmakuLineHeight,
     danmakuTimeOffset,
     danmakuEnabledByDefault,
+    danmakuApiBaseUrl,
     danmakuBiliBiliSource,
     danmakuGamerSource,
     danmakuDanDanSource,

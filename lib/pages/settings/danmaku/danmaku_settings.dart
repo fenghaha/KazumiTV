@@ -4,6 +4,7 @@ import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:kazumi/bean/settings/settings_detail_scaffold.dart';
 import 'package:kazumi/bean/settings/settings_list.dart';
 import 'package:kazumi/pages/settings/danmaku/danmaku_ch_convert_tile.dart';
+import 'package:kazumi/pages/settings/danmaku/danmaku_server_tile.dart';
 import 'package:kazumi/services/storage/storage.dart';
 
 class DanmakuSettingsPage extends StatefulWidget {
@@ -157,6 +158,7 @@ class _DanmakuSettingsPageState extends State<DanmakuSettingsPage> {
       title: const Text('弹幕设置'),
       body: SettingsList(
         sections: [
+          const SettingsSection(tiles: [DanmakuServerTile()]),
           SettingsSection(
             title: Text('弹幕来源'),
             tiles: [

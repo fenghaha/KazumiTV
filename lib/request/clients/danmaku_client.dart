@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:kazumi/request/core/dio_factory.dart';
 import 'package:kazumi/request/core/network_error_mapper.dart';
+import 'package:kazumi/request/core/network_config.dart';
+import 'package:kazumi/services/network/danmaku_server.dart';
 import 'package:kazumi/utils/dandan_credentials.dart';
 import 'package:kazumi/utils/http_headers.dart';
 import 'package:kazumi/utils/crypto.dart';
@@ -18,18 +20,29 @@ class DanmakuClient {
   }) async {
     final timestamp = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     final uri = Uri.parse(url);
+    final official = uri.origin == DanmakuServer.officialBase;
+    if (official && (dandanCredentials['id']!.isEmpty || dandanCredentials['value']!.isEmpty)) {
+      throw const DanmakuConfigurationException();
+    }
     final requestHeaders = <String, dynamic>{
       'user-agent': getRandomUA(),
       'referer': '',
-      'X-Auth': 1,
-      'X-AppId': dandanCredentials['id'],
-      'X-Timestamp': timestamp,
-      'X-Signature': generateDandanSignature(uri.path, timestamp),
+      if (official) ...{
+        'X-Auth': 1,
+        'X-AppId': dandanCredentials['id'],
+        'X-Timestamp': timestamp,
+        'X-Signature': generateDandanSignature(uri.path, timestamp),
+      },
       ...headers,
     };
 
+    // Custom bases can contain a private path token; use a non-logging client.
+    final custom = official ? null : DioFactory.createForConfig(
+      NetworkConfig.fromSettings(receiveTimeout: const Duration(seconds: 45))
+          .copyWith(enableLog: false),
+    );
     try {
-      final response = await DioFactory.apiDio.get(
+      final response = await (custom ?? DioFactory.apiDio).get(
         url,
         queryParameters: queryParameters,
         options: Options(headers: requestHeaders),
@@ -37,7 +50,19 @@ class DanmakuClient {
       );
       return response.data;
     } on DioException catch (e) {
+      if (!official) {
+        // Do not leak the configured token URL via exception logging.
+        throw Exception('自建弹幕服务请求失败（${e.response?.statusCode ?? e.type.name}）');
+      }
       throw await NetworkErrorMapper.mapException(e);
+    } finally {
+      custom?.close();
     }
   }
+}
+
+class DanmakuConfigurationException implements Exception {
+  const DanmakuConfigurationException();
+  @override
+  String toString() => '此安装包未配置弹弹play凭据，请在弹幕设置中填写自建弹幕服务器';
 }
