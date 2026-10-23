@@ -15,6 +15,7 @@ class TvFocusable extends StatefulWidget {
     this.padding = const EdgeInsets.all(12),
     this.selected = false,
     this.semanticLabel,
+    this.focusableWhenDisabled = false,
   });
 
   final Widget child;
@@ -26,6 +27,10 @@ class TvFocusable extends StatefulWidget {
   final EdgeInsetsGeometry padding;
   final bool selected;
   final String? semanticLabel;
+
+  /// Retain a remote navigation target while its action is temporarily busy.
+  /// A null callback still blocks activation and exposes disabled semantics.
+  final bool focusableWhenDisabled;
 
   @override
   State<TvFocusable> createState() => _TvFocusableState();
@@ -62,7 +67,7 @@ class _TvFocusableState extends State<TvFocusable> {
       child: FocusableActionDetector(
         focusNode: widget.focusNode,
         autofocus: widget.autofocus,
-        enabled: enabled,
+        enabled: enabled || widget.focusableWhenDisabled,
         onFocusChange: _onFocus,
         shortcuts: const {
           SingleActivator(LogicalKeyboardKey.select): ActivateIntent(),

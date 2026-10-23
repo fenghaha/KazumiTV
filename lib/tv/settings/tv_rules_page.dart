@@ -142,6 +142,9 @@ class _TvRulesPageState extends State<TvRulesPage> {
     bool selected = false,
     bool autofocus = false,
   }) => TvFocusable(
+    // Busy rule actions must not remove the current D-pad focus target. Keep
+    // navigation independent from activation; null callbacks reject repeats.
+    focusableWhenDisabled: true,
     autofocus: autofocus,
     selected: selected,
     onPressed: onPressed,
