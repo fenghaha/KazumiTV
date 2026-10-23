@@ -1,3 +1,5 @@
+import 'package:kazumi/tv/input/tv_adaptive_fields.dart';
+import 'package:kazumi/tv/tv_mode.dart';
 import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' show PointerDeviceKind;
@@ -61,7 +63,7 @@ Future<void> showDanmakuSourceSheet(
     builder: (context) {
       final size = MediaQuery.sizeOf(context);
       return SizedBox(
-        width: math.min(440, size.width * 0.46),
+        width: TvMode.enabled ? math.min(760, size.width * 0.85) : math.min(440, size.width * 0.46),
         height: double.infinity,
         child: Material(
           color: Theme.of(context).colorScheme.surface,
@@ -297,7 +299,7 @@ class _DanmakuSourceSheetState extends State<_DanmakuSourceSheet> {
   Widget build(BuildContext context) {
     return AnimatedPadding(
       duration: const Duration(milliseconds: 180),
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      padding: EdgeInsets.only(bottom: TvMode.enabled ? 0 : MediaQuery.viewInsetsOf(context).bottom),
       child: SafeArea(
         top: false,
         child: InputDecorationTheme(
@@ -363,7 +365,7 @@ class _DanmakuSourceSheetState extends State<_DanmakuSourceSheet> {
           padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
           child: ValueListenableBuilder<TextEditingValue>(
             valueListenable: _keywordController,
-            builder: (context, value, _) => TextField(
+            builder: (context, value, _) => TvAdaptiveTextField(
               controller: _keywordController,
               autofocus: true,
               textInputAction: TextInputAction.search,
@@ -696,8 +698,8 @@ class _EpisodeToolbar extends StatelessWidget {
             children: [
               Expanded(
                 child: SizedBox(
-                  height: 46,
-                  child: TextField(
+                  height: TvMode.enabled ? 96 : 46,
+                  child: TvAdaptiveTextField(
                     controller: searchController,
                     onChanged: onSearch,
                     decoration: InputDecoration(
@@ -721,9 +723,9 @@ class _EpisodeToolbar extends StatelessWidget {
               if (showSegments) ...[
                 const SizedBox(width: 8),
                 SizedBox(
-                  width: 126,
-                  height: 46,
-                  child: TextField(
+                  width: TvMode.enabled ? 220 : 126,
+                  height: TvMode.enabled ? 96 : 46,
+                  child: TvAdaptiveTextField(
                     controller: jumpController,
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],

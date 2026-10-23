@@ -7,7 +7,7 @@ import 'package:kazumi/pages/settings/sync/sync_settings_widgets.dart';
 import 'package:kazumi/services/storage/storage.dart';
 import 'package:kazumi/services/sync/bangumi_sync_service.dart';
 import 'package:kazumi/tv/tv_mode.dart';
-import 'package:kazumi/tv/widgets/tv_focusable.dart';
+import 'package:kazumi/tv/settings/tv_sync_service_card.dart';
 
 enum _SyncStatus {
   unconnected('未连接', Icons.link_off_rounded),
@@ -110,7 +110,7 @@ class _SyncSettingsPageState extends State<SyncSettingsPage> {
                   builder: (context, constraints) {
                     final largeText =
                         MediaQuery.textScalerOf(context).scale(16) > 22;
-                    if (constraints.maxWidth >= 680 && !largeText) {
+                    if (!TvMode.enabled && constraints.maxWidth >= 680 && !largeText) {
                       return Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -158,6 +158,10 @@ class _SyncServiceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    if (TvMode.enabled) {
+      return TvSyncServiceCard(title: '$service · $title', description: description,
+        content: content, status: _SyncStatusChip(status: status), action: action, icon: icon, onPressed: onPressed);
+    }
     final card = Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -212,11 +216,6 @@ class _SyncServiceCard extends StatelessWidget {
         ],
       ),
     );
-    if (TvMode.enabled) {
-      return TvFocusable(onPressed: onPressed, padding: EdgeInsets.zero,
-          borderRadius: BorderRadius.circular(28),
-          child: ExcludeFocus(child: card));
-    }
     return card;
   }
 }

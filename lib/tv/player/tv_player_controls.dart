@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kazumi/tv/widgets/tv_focusable.dart';
+import 'package:kazumi/tv/settings/tv_slider_tile.dart';
 
 /// Presentation-only remote adapter. All playback operations are callbacks to
 /// the upstream player, so seeking, sync-play and history keep one code path.
@@ -39,8 +40,8 @@ class TvPlayerControls extends StatefulWidget {
   final Future<void> Function() onEpisodes;
   final VoidCallback onNext;
   final VoidCallback onToggleDanmaku;
-  final VoidCallback onDanmakuSources;
-  final VoidCallback onDetails;
+  final Future<void> Function() onDanmakuSources;
+  final Future<void> Function() onDetails;
   final VoidCallback onBack;
   final bool busy;
 
@@ -50,7 +51,7 @@ class TvPlayerControls extends StatefulWidget {
 
 class _TvPlayerControlsState extends State<TvPlayerControls> {
   final _playFocus = FocusNode(debugLabel: 'TV playback toggle');
-  LocalHistoryEntry? _controlsEntry;
+  final _seekControl = GlobalKey<TvSliderTileState>();
   Timer? _initialTimer;
   Timer? _seekHintTimer;
   bool _visible = false;
@@ -88,37 +89,23 @@ class _TvPlayerControlsState extends State<TvPlayerControls> {
     if (!mounted || _disposing) return;
     _initialTimer?.cancel();
     if (!_visible) setState(() => _visible = true);
-    _controlsEntry ??= LocalHistoryEntry(
-      onRemove: () {
-        _controlsEntry = null;
-        _entryAttached = false;
-        if (mounted && !_disposing) {
-          setState(() => _visible = false);
-          widget.playbackFocus.requestFocus();
-        }
-      },
-    );
-    final route = ModalRoute.of(context);
-    if (route != null && !_entryAttached) {
-      route.addLocalHistoryEntry(_controlsEntry!);
-      _entryAttached = true;
-    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && _visible && !_modalOpen) _playFocus.requestFocus();
+      if (mounted &&
+          _visible &&
+          !_modalOpen &&
+          ModalRoute.of(context)?.isCurrent != false) {
+        _playFocus.requestFocus();
+      }
     });
   }
-
-  bool _entryAttached = false;
 
   void _hideControls() {
     _initialTimer?.cancel();
     if (_disposing) return;
-    final entry = _controlsEntry;
-    _controlsEntry = null;
-    _entryAttached = false;
-    entry?.remove();
     if (mounted && _visible) setState(() => _visible = false);
-    if (mounted && !_modalOpen) widget.playbackFocus.requestFocus();
+    if (mounted && !_modalOpen && ModalRoute.of(context)?.isCurrent != false) {
+      widget.playbackFocus.requestFocus();
+    }
   }
 
   void _toggleAndHide() {
@@ -126,15 +113,31 @@ class _TvPlayerControlsState extends State<TvPlayerControls> {
     _hideControls();
   }
 
-  Future<void> _openEpisodes() async {
+  Future<void> _openEpisodes() => _openPanel(widget.onEpisodes);
+
+  Future<void> _openPanel(Future<void> Function() open) async {
     if (_modalOpen) return;
-    _hideControls();
+    _initialTimer?.cancel();
     _modalOpen = true;
     try {
-      await widget.onEpisodes();
+      await open();
     } finally {
       _modalOpen = false;
-      if (mounted) widget.playbackFocus.requestFocus();
+      if (mounted && ModalRoute.of(context)?.isCurrent != false) {
+        if (_visible) {
+          _playFocus.requestFocus();
+        } else {
+          widget.playbackFocus.requestFocus();
+        }
+      }
+    }
+  }
+
+  void _backWithinPlayer() {
+    if (_seekControl.currentState?.isEditing == true) {
+      _seekControl.currentState!.finishEditing();
+    } else if (_visible) {
+      _hideControls();
     }
   }
 
@@ -167,7 +170,7 @@ class _TvPlayerControlsState extends State<TvPlayerControls> {
     if (key == LogicalKeyboardKey.escape || key == LogicalKeyboardKey.goBack) {
       if (!repeat) {
         if (_visible) {
-          _hideControls();
+          _backWithinPlayer();
         } else {
           widget.onBack();
         }
@@ -234,7 +237,6 @@ class _TvPlayerControlsState extends State<TvPlayerControls> {
     FocusManager.instance.removeEarlyKeyEventHandler(_handleRemote);
     _initialTimer?.cancel();
     _seekHintTimer?.cancel();
-    _controlsEntry?.remove();
     _playFocus.dispose();
     super.dispose();
   }
@@ -267,7 +269,15 @@ class _TvPlayerControlsState extends State<TvPlayerControls> {
   );
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => PopScope(
+    canPop: !_visible,
+    onPopInvokedWithResult: (didPop, result) {
+      if (!didPop && !_modalOpen) _backWithinPlayer();
+    },
+    child: _buildControls(context),
+  );
+
+  Widget _buildControls(BuildContext context) {
     if (!_visible) {
       return _seekHint
           ? Align(
@@ -311,7 +321,7 @@ class _TvPlayerControlsState extends State<TvPlayerControls> {
             children: [
               Row(
                 children: [
-                  _button('返回', Icons.arrow_back_rounded, widget.onBack),
+                  _button('收起菜单', Icons.arrow_back_rounded, _hideControls),
                   const SizedBox(width: 20),
                   Expanded(
                     child: Text(
@@ -345,22 +355,23 @@ class _TvPlayerControlsState extends State<TvPlayerControls> {
                             style: const TextStyle(fontSize: 19),
                           ),
                           Expanded(
-                            child: Slider(
+                            child: TvSliderTile(
+                              key: _seekControl,
+                              title: const Text('播放进度'),
+                              valueLabel: _time(widget.position),
                               value: widget.position.inMilliseconds
                                   .toDouble()
                                   .clamp(0.0, max),
+                              min: 0,
                               max: max,
                               divisions: (widget.duration.inSeconds ~/ 10)
                                   .clamp(1, 100000),
-                              onChanged:
-                                  widget.busy ||
-                                      widget.duration <= Duration.zero
-                                  ? null
-                                  : (value) => widget.onSeek(
-                                      Duration(milliseconds: value.round()),
-                                    ),
-                              semanticFormatterCallback: (value) =>
-                                  _time(Duration(milliseconds: value.round())),
+                              enabled:
+                                  !widget.busy &&
+                                  widget.duration > Duration.zero,
+                              onChanged: (value) => widget.onSeek(
+                                Duration(milliseconds: value.round()),
+                              ),
                             ),
                           ),
                           Text(
@@ -400,12 +411,13 @@ class _TvPlayerControlsState extends State<TvPlayerControls> {
                           _button(
                             '弹幕匹配',
                             Icons.manage_search_rounded,
-                            widget.onDanmakuSources,
+                            () =>
+                                unawaited(_openPanel(widget.onDanmakuSources)),
                           ),
                           _button(
                             '播放信息',
                             Icons.info_outline_rounded,
-                            widget.onDetails,
+                            () => unawaited(_openPanel(widget.onDetails)),
                           ),
                         ],
                       ),

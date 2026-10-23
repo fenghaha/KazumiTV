@@ -317,7 +317,7 @@ class _CaptchaDialogState extends State<_CaptchaDialog> {
                 label: const Text('换一张'),
               ),
             ),
-            TextField(
+            TvAdaptiveTextField(
               controller: _inputController,
               focusNode: _inputFocus,
               enabled: !_submitting,

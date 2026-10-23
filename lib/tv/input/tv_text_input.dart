@@ -25,6 +25,7 @@ class TvTextInput extends StatefulWidget {
     this.multiline = false,
     this.maxLength,
     this.focusNode,
+    this.inputFormatters,
   });
 
   final TextEditingController controller;
@@ -38,6 +39,7 @@ class TvTextInput extends StatefulWidget {
   final bool multiline;
   final int? maxLength;
   final FocusNode? focusNode;
+  final List<TextInputFormatter>? inputFormatters;
 
   @override
   State<TvTextInput> createState() => _TvTextInputState();
@@ -68,11 +70,15 @@ class _TvTextInputState extends State<TvTextInput> {
       );
       return false;
     }
-    widget.controller.value = TextEditingValue(
+    var edited = TextEditingValue(
       text: value,
       selection: TextSelection.collapsed(offset: value.length),
     );
-    widget.onChanged?.call(value);
+    for (final formatter in widget.inputFormatters ?? <TextInputFormatter>[]) {
+      edited = formatter.formatEditUpdate(widget.controller.value, edited);
+    }
+    widget.controller.value = edited;
+    widget.onChanged?.call(edited.text);
     return true;
   }
 
@@ -150,7 +156,7 @@ class _TvTextInputState extends State<TvTextInput> {
       }
     }
     if (value != null && _apply(value) && mounted) {
-      widget.onSubmitted?.call(value);
+      widget.onSubmitted?.call(widget.controller.text);
     }
   }
 
@@ -167,7 +173,7 @@ class _TvTextInputState extends State<TvTextInput> {
           maxLength: _maxLength,
           canApply: () => mounted && widget.enabled,
           onChanged: (value) {
-            if (mounted && widget.enabled) widget.onChanged?.call(value);
+            if (mounted && widget.enabled) _apply(value);
           },
         ),
       );
@@ -179,7 +185,7 @@ class _TvTextInputState extends State<TvTextInput> {
     }
     if (!mounted) return;
     // The phone dialog has closed before this callback can navigate elsewhere.
-    if (result != null && widget.enabled) widget.onSubmitted?.call(result);
+    if (result != null && widget.enabled) widget.onSubmitted?.call(widget.controller.text);
   }
 
   @override

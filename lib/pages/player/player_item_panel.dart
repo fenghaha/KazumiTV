@@ -1,3 +1,5 @@
+import 'package:kazumi/tv/input/tv_adaptive_fields.dart';
+import 'package:kazumi/tv/tv_mode.dart';
 import 'dart:async';
 import 'dart:io';
 
@@ -227,11 +229,11 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
       return PlayerPanelHoldFocusRegion(
           acquirePlayerPanelHold: widget.acquirePlayerPanelHold,
           child: Container(
-            constraints: isDesktop()
+            constraints: TvMode.enabled ? const BoxConstraints() : isDesktop()
                 ? const BoxConstraints(maxWidth: 500, maxHeight: 33)
                 : const BoxConstraints(maxHeight: 33),
             padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: TextField(
+            child: TvAdaptiveTextField(
               focusNode: textFieldFocus,
               style: TextStyle(
                   fontSize: isDesktop() ? 15 : 13, color: Colors.white),
@@ -297,7 +299,8 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
       var input = '';
       return AlertDialog(
         title: const Text('跳过秒数'),
-        content: TextField(
+        content: TvOwnedTextField(builder: (editor) => TvAdaptiveTextField(
+          controller: editor,
           inputFormatters: [
             FilteringTextInputFormatter.digitsOnly,
           ],
@@ -308,7 +311,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
           onChanged: (value) {
             input = value;
           },
-        ),
+        )),
         actions: <Widget>[
           TextButton(
             onPressed: () => KazumiDialog.dismiss(),

@@ -1,3 +1,4 @@
+import 'package:kazumi/tv/input/tv_adaptive_fields.dart';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -533,7 +534,7 @@ class _SyncPlayRoomSheetState extends State<_SyncPlayRoomSheet> {
   }
 
   Widget _buildRoomField() {
-    return TextFormField(
+    return TvAdaptiveTextFormField(
       controller: _roomController,
       autofocus: true,
       keyboardType: TextInputType.number,
@@ -558,7 +559,7 @@ class _SyncPlayRoomSheetState extends State<_SyncPlayRoomSheet> {
   }
 
   Widget _buildUsernameField({bool compact = false}) {
-    return TextFormField(
+    return TvAdaptiveTextFormField(
       controller: _usernameController,
       textInputAction: TextInputAction.done,
       autovalidateMode: AutovalidateMode.onUserInteraction,
@@ -656,7 +657,7 @@ class _SyncPlayServerSheetState extends State<_SyncPlayServerSheet> {
             ]),
             if (_selectedEndPoint == _customOption) ...[
               const SizedBox(height: 16),
-              TextField(
+              TvAdaptiveTextField(
                 controller: _customEndPointController,
                 autofocus: _focusCustomEndPoint,
                 keyboardType: TextInputType.url,

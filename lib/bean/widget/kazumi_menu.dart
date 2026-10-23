@@ -1,3 +1,5 @@
+import 'package:kazumi/tv/tv_mode.dart';
+import 'package:kazumi/tv/settings/tv_choice_dialog.dart';
 import 'package:flutter/material.dart';
 
 typedef KazumiMenuBuilder =
@@ -38,6 +40,16 @@ class KazumiMenuButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (TvMode.enabled) {
+      return builder(context, enabled && menuChildren.isNotEmpty ? () async {
+        onOpen?.call();
+        try {
+          await showTvChoices(context, title: const Text('选择操作'), choices: _tvChoices(context, menuChildren));
+        } finally {
+          onClose?.call();
+        }
+      } : null);
+    }
     return MenuButtonTheme(
       data: MenuButtonThemeData(
         // Submenu entries must use the same inset as ordinary menu items.
@@ -112,3 +124,15 @@ class KazumiMenuItem extends StatelessWidget {
     );
   }
 }
+
+List<TvChoice> _tvChoices(BuildContext context, List<Widget> items) => [
+  for (final item in items)
+    if (item is KazumiMenuItem)
+      TvChoice(label: Text(item.label), icon: item.leadingIcon,
+        selected: item.selected == true, onSelected: item.onPressed)
+    else if (item is SubmenuButton)
+      TvChoice(label: item.child ?? const Text('更多选项'), icon: item.leadingIcon,
+        onSelected: () => showTvChoices(context, title: item.child ?? const Text('更多选项'), choices: _tvChoices(context, item.menuChildren)))
+    else if (item is MenuItemButton)
+      TvChoice(label: item.child ?? const SizedBox.shrink(), icon: item.leadingIcon, onSelected: item.onPressed),
+];

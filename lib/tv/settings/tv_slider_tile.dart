@@ -16,7 +16,9 @@ class TvSliderTile extends StatefulWidget {
     this.divisions,
     this.leading,
     this.description,
+    this.enabled = true,
   });
+  final bool enabled;
   final Widget title;
   final Widget? description;
   final IconData? leading;
@@ -25,13 +27,14 @@ class TvSliderTile extends StatefulWidget {
   final int? divisions;
   final ValueChanged<double> onChanged;
   @override
-  State<TvSliderTile> createState() => _TvSliderTileState();
+  State<TvSliderTile> createState() => TvSliderTileState();
 }
 
-class _TvSliderTileState extends State<TvSliderTile> {
+class TvSliderTileState extends State<TvSliderTile> {
   final _focus = FocusNode(debugLabel: 'TV adjustable setting');
-  LocalHistoryEntry? _entry;
   bool _editing = false;
+  bool get isEditing => _editing;
+  void finishEditing() => _end();
   bool _disposing = false;
   TvSettingsNavigationController? _navigation;
   @override
@@ -44,21 +47,10 @@ class _TvSliderTileState extends State<TvSliderTile> {
     if (_editing) return;
     setState(() => _editing = true);
     _navigation?.registerEditor(this, _end);
-    _entry = LocalHistoryEntry(
-      onRemove: () {
-        _entry = null;
-        _navigation?.clearEditor(this);
-        if (mounted && !_disposing) setState(() => _editing = false);
-      },
-    );
-    ModalRoute.of(context)?.addLocalHistoryEntry(_entry!);
   }
 
   void _end() {
     _navigation?.clearEditor(this);
-    final entry = _entry;
-    _entry = null;
-    entry?.remove();
     if (mounted && !_disposing && _editing) setState(() => _editing = false);
   }
 
@@ -66,7 +58,6 @@ class _TvSliderTileState extends State<TvSliderTile> {
   void dispose() {
     _disposing = true;
     _navigation?.clearEditor(this);
-    _entry?.remove();
     _focus.dispose();
     super.dispose();
   }
@@ -100,61 +91,68 @@ class _TvSliderTileState extends State<TvSliderTile> {
   }
 
   @override
-  Widget build(BuildContext context) => Focus(
-    canRequestFocus: false,
-    skipTraversal: true,
-    onKeyEvent: _key,
-    child: TvFocusable(
-      focusNode: _focus,
-      onPressed: () => _editing ? _end() : _begin(),
-      onFocusChange: (focused) {
-        if (!focused) _end();
-      },
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              if (widget.leading != null) ...[
-                Icon(widget.leading, color: TvTheme.muted),
-                const SizedBox(width: 16),
-              ],
-              Expanded(
-                child: DefaultTextStyle.merge(
-                  style: const TextStyle(fontSize: 20),
-                  child: widget.title,
+  Widget build(BuildContext context) => PopScope(
+    canPop: !_editing,
+    onPopInvokedWithResult: (didPop, result) {
+      if (!didPop && _editing) _end();
+    },
+    child: Focus(
+      canRequestFocus: false,
+      skipTraversal: true,
+      onKeyEvent: _key,
+      child: TvFocusable(
+        focusNode: _focus,
+        focusableWhenDisabled: true,
+        onPressed: widget.enabled ? () => _editing ? _end() : _begin() : null,
+        onFocusChange: (focused) {
+          if (!focused) _end();
+        },
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                if (widget.leading != null) ...[
+                  Icon(widget.leading, color: TvTheme.muted),
+                  const SizedBox(width: 16),
+                ],
+                Expanded(
+                  child: DefaultTextStyle.merge(
+                    style: const TextStyle(fontSize: 20),
+                    child: widget.title,
+                  ),
                 ),
-              ),
-              Text(
-                widget.valueLabel,
-                style: const TextStyle(color: TvTheme.focus, fontSize: 20),
-              ),
-            ],
-          ),
-          if (widget.description != null) widget.description!,
-          ExcludeFocus(
-            child: Slider(
-              value: widget.value,
-              min: widget.min,
-              max: widget.max,
-              divisions: widget.divisions,
-              onChangeStart: (_) {
-                _focus.requestFocus();
-                _begin();
-              },
-              onChangeEnd: (_) => _end(),
-              onChanged: widget.onChanged,
+                Text(
+                  widget.valueLabel,
+                  style: const TextStyle(color: TvTheme.focus, fontSize: 20),
+                ),
+              ],
             ),
-          ),
-          Text(
-            _editing ? '左右调节 · 确认或返回结束 · 上下换项' : '按确认调节 · 上下换项',
-            style: TextStyle(
-              color: _editing ? TvTheme.focus : TvTheme.muted,
-              fontSize: 16,
+            if (widget.description != null) widget.description!,
+            ExcludeFocus(
+              child: Slider(
+                value: widget.value,
+                min: widget.min,
+                max: widget.max,
+                divisions: widget.divisions,
+                onChangeStart: (_) {
+                  _focus.requestFocus();
+                  _begin();
+                },
+                onChangeEnd: (_) => _end(),
+                onChanged: widget.enabled ? widget.onChanged : null,
+              ),
             ),
-          ),
-        ],
+            Text(
+              _editing ? '左右调节 · 确认或返回结束 · 上下换项' : '按确认调节 · 上下换项',
+              style: TextStyle(
+                color: _editing ? TvTheme.focus : TvTheme.muted,
+                fontSize: 16,
+              ),
+            ),
+          ],
+        ),
       ),
     ),
   );

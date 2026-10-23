@@ -36,8 +36,8 @@ void _showCustomKeywordDialog({
   KazumiDialog.show(
     builder: (context) => AlertDialog(
       title: const Text('修改检索词'),
-      content: TextFormField(
-        initialValue: initialKeyword,
+      content: TvOwnedTextField(initialValue: initialKeyword, builder: (editor) => TvAdaptiveTextField(
+        controller: editor,
         autofocus: true,
         textInputAction: TextInputAction.search,
         decoration: InputDecoration(
@@ -47,8 +47,8 @@ void _showCustomKeywordDialog({
           border: const OutlineInputBorder(),
         ),
         onChanged: (value) => keyword = value,
-        onFieldSubmitted: submit,
-      ),
+        onSubmitted: submit,
+      )),
       actions: [
         TextButton(
           onPressed: KazumiDialog.dismiss,

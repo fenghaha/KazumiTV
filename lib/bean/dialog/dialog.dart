@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:kazumi/tv/tv_mode.dart';
 import 'package:flutter/scheduler.dart';
 
 import 'package:kazumi/navigation.dart';
@@ -75,7 +76,9 @@ class KazumiDialog {
         transitionBuilder: transitionBuilder,
       );
       dialog._attach(route);
-      return await navigator.push<T>(route);
+      final result = await navigator.push<T>(route);
+      if (TvMode.enabled) await route.completed;
+      return result;
     } catch (e) {
       debugPrint('Kazumi Dialog Error: Failed to show dialog: $e');
       return null;

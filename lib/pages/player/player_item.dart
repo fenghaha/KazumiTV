@@ -1231,18 +1231,18 @@ class _PlayerItemState extends State<PlayerItem>
     });
   }
 
-  void showDanmakuSwitch() {
-    unawaited(showDanmakuSourceSheet(
+  Future<void> showDanmakuSwitch() {
+    return showDanmakuSourceSheet(
       context,
       bangumiId: videoPageController.bangumiItem.id,
       initialKeyword: videoPageController.title,
       danmakuController: playerController.danmaku,
       onBeforeApply: videoPageController.cancelAutomaticDanmakuLoad,
-    ));
+    );
   }
 
-  void showVideoInfo() {
-    showVideoDetailsSheet(context, playerController: playerController);
+  Future<void> showVideoInfo() async {
+    await showVideoDetailsSheet(context, playerController: playerController);
   }
 
   void showSyncPlayPanel() {

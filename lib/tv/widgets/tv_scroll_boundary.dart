@@ -68,7 +68,8 @@ class TvScrollBoundaryState extends State<TvScrollBoundary> {
       if (element == context) return false;
       if (element is StatefulElement && element.state is ScrollableState) {
         final scroll = element.state as ScrollableState;
-        if (axisDirectionToAxis(scroll.position.axisDirection) == Axis.vertical) {
+        if (axisDirectionToAxis(scroll.position.axisDirection) ==
+            Axis.vertical) {
           scrolls.add(scroll);
         }
       }
@@ -126,6 +127,32 @@ class TvScrollBoundaryState extends State<TvScrollBoundary> {
     final node = FocusManager.instance.primaryFocus;
     if (node == null || node.context?.mounted != true || _editing(node)) {
       return KeyEventResult.ignored;
+    }
+    final down = event.logicalKey == LogicalKeyboardKey.arrowDown;
+    final up = event.logicalKey == LogicalKeyboardKey.arrowUp;
+    if (down || up) {
+      for (final scroll in _verticalScrolls(node.context!)) {
+        final viewport = scroll.context.findRenderObject()!;
+        final bounds = MatrixUtils.transformRect(
+          viewport.getTransformTo(null),
+          viewport.paintBounds,
+        );
+        final clipped = down
+            ? node.rect.bottom > bounds.bottom + 1
+            : node.rect.top < bounds.top - 1;
+        final position = scroll.position;
+        final canScroll = down
+            ? position.pixels < position.maxScrollExtent
+            : position.pixels > position.minScrollExtent;
+        if (clipped && canScroll) {
+          position.jumpTo(
+            (position.pixels +
+                    (down ? 1 : -1) * position.viewportDimension * .6)
+                .clamp(position.minScrollExtent, position.maxScrollExtent),
+          );
+          return KeyEventResult.handled;
+        }
+      }
     }
     if (event.logicalKey == LogicalKeyboardKey.arrowUp && _firstRow(node)) {
       _top(node.context!);

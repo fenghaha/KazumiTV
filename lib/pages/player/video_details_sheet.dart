@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kazumi/tv/tv_mode.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 
@@ -11,12 +12,13 @@ import 'package:kazumi/bean/widget/empty_state_widget.dart';
 import 'package:kazumi/bean/widget/tonal_card.dart';
 import 'package:kazumi/pages/player/player_controller.dart';
 
-void showVideoDetailsSheet(
+Future<void> showVideoDetailsSheet(
   BuildContext context, {
   required PlayerController playerController,
-}) {
-  showAdaptiveBottomSheet<void>(
+}) async {
+  await showAdaptiveBottomSheet<void>(
     context: context,
+    useRootNavigator: TvMode.enabled,
     maxHeightFactor: 0.86,
     compactLandscapeMaxHeightFactor: 0.95,
     builder: (context) =>
