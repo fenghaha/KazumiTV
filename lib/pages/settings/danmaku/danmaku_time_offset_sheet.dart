@@ -1,3 +1,5 @@
+import 'package:kazumi/tv/tv_mode.dart';
+import 'package:kazumi/tv/settings/tv_slider_tile.dart';
 import 'package:flutter/material.dart';
 
 import 'package:kazumi/bean/dialog/material_bottom_sheet.dart';
@@ -123,7 +125,7 @@ class _DanmakuTimeOffsetSheetState extends State<DanmakuTimeOffsetSheet> {
                     ),
                   ]),
                   const SizedBox(height: 16),
-                  Slider(
+                  if (TvMode.enabled) TvSliderTile(title: const Text('弹幕偏移'), value: _offset, valueLabel: formatDanmakuTimeOffset(_offset), min: _minDanmakuTimeOffset, max: _maxDanmakuTimeOffset, divisions: _danmakuTimeOffsetDivisions, onChanged: _updateOffset) else Slider(
                     value: _offset,
                     min: _minDanmakuTimeOffset,
                     max: _maxDanmakuTimeOffset,

@@ -229,17 +229,17 @@ class _BangumiSyncPageState extends State<BangumiSyncPage> {
                           ),
                         ),
                         const Divider(indent: 16, endIndent: 16),
-                        SwitchListTile(
+                        SettingsTile.switchTile(
                           title: const Text('同步结果提示'),
-                          subtitle: const Text('修改追番状态后显示同步结果'),
-                          value: showToast,
-                          onChanged: _busy
+                          description: const Text('修改追番状态后显示同步结果'),
+                          initialValue: showToast,
+                          onToggle: _busy
                               ? null
                               : (value) async {
                                   await GStorage.putSetting(
                                     SettingsKeys
                                         .bangumiImmediateSyncToastEnable,
-                                    value,
+                                    value ?? !showToast,
                                   );
                                   if (mounted) setState(() {});
                                 },

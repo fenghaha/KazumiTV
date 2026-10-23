@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kazumi/tv/widgets/tv_focusable.dart';
 import 'package:kazumi/tv/tv_mode.dart';
 import 'package:kazumi/tv/settings/tv_slider_tile.dart';
 
@@ -389,7 +390,7 @@ class SettingsTile<T> extends StatelessWidget {
     final secondary =
         enabled ? colorScheme.onSurfaceVariant : _disabledOn(context);
 
-    return InkWell(
+    final row = InkWell(
       onTap: _tapHandler(context),
       onHighlightChanged: SplitListRow.pressReporterOf(context),
       child: Padding(
@@ -435,6 +436,13 @@ class SettingsTile<T> extends StatelessWidget {
           ),
         ),
       ),
+    );
+    if (!TvMode.enabled) return row;
+    return TvFocusable(
+      padding: EdgeInsets.zero,
+      focusableWhenDisabled: true,
+      onPressed: _tapHandler(context),
+      child: ExcludeFocus(child: row),
     );
   }
 }

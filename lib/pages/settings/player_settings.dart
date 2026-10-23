@@ -1,3 +1,4 @@
+import 'package:kazumi/tv/input/tv_adaptive_fields.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show FilteringTextInputFormatter;
@@ -170,7 +171,8 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
         title: Text(title),
         content: StatefulBuilder(
             builder: (BuildContext context, StateSetter setState) {
-          return TextField(
+          return TvOwnedTextField(builder: (editor) => TvAdaptiveTextField(
+            controller: editor,
             inputFormatters: [
               FilteringTextInputFormatter.digitsOnly,
             ],
@@ -181,7 +183,7 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
             onChanged: (value) {
               input = value;
             },
-          );
+          ));
         }),
         actions: <Widget>[
           TextButton(

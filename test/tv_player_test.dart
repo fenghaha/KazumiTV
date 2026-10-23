@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_modular/flutter_modular.dart';
+import 'package:kazumi/tv/settings/tv_slider_tile.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kazumi/modules/roads/road_module.dart';
 import 'package:kazumi/tv/player/tv_episode_picker.dart';
@@ -56,8 +58,8 @@ void main() {
                   },
                   onNext: () {},
                   onToggleDanmaku: () {},
-                  onDanmakuSources: () {},
-                  onDetails: () {},
+                  onDanmakuSources: () async {},
+                  onDetails: () async {},
                   onBack: () => navigator.currentState!.maybePop(),
                 ),
               ],
@@ -74,7 +76,11 @@ void main() {
   ) async {
     await mount(tester);
     expect(find.text('暂停'), findsOneWidget);
-    expect(navigator.currentState!.canPop(), isTrue);
+    expect(
+      ModalRoute.of(tester.element(find.byType(TvPlayerControls)))!
+          .popDisposition,
+      RoutePopDisposition.doNotPop,
+    );
     await navigator.currentState!.maybePop();
     await tester.pumpAndSettle();
     expect(find.text('暂停'), findsNothing);
@@ -82,7 +88,11 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
     await tester.pumpAndSettle();
     expect(find.text('暂停'), findsOneWidget);
-    expect(navigator.currentState!.canPop(), isTrue);
+    expect(
+      ModalRoute.of(tester.element(find.byType(TvPlayerControls)))!
+          .popDisposition,
+      RoutePopDisposition.doNotPop,
+    );
     await navigator.currentState!.maybePop();
     await tester.pumpAndSettle();
     expect(navigator.currentState!.canPop(), isFalse);
@@ -191,6 +201,122 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('tv-episode-1-2')));
       await tester.pumpAndSettle();
       expect(selected, (episode: 2, road: 1));
+    },
+  );
+  testWidgets(
+    'real router: progress Up/Down never seeks, Back ends edit then controls then playback; modal closes first',
+    (tester) async {
+      tester.view.physicalSize = const Size(960, 540);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      var exits = 0;
+      final module = createModule(
+        register: (c) {
+          c.route(
+            '/',
+            child: (context, state) => Scaffold(
+              body: TextButton(
+                onPressed: () => context.pushNamed('/player'),
+                child: const Text('打开播放器'),
+              ),
+            ),
+          );
+          c.route(
+            '/player',
+            child: (context, state) => PopScope(
+              onPopInvokedWithResult: (didPop, result) {
+                if (didPop) exits++;
+              },
+              child: Scaffold(
+                body: Focus(
+                  focusNode: playbackFocus,
+                  autofocus: true,
+                  child: Stack(
+                    children: [
+                      const SizedBox.expand(),
+                      TvPlayerControls(
+                        playbackFocus: playbackFocus,
+                        title: '测试播放',
+                        playing: true,
+                        position: const Duration(minutes: 3),
+                        duration: const Duration(minutes: 24),
+                        danmakuEnabled: true,
+                        onTogglePlayback: () {},
+                        onSeek: seeks.add,
+                        onSeekBy: seeks.add,
+                        onEpisodes: () async {},
+                        onNext: () {},
+                        onToggleDanmaku: () {},
+                        onDanmakuSources: () async {},
+                        onDetails: () async {
+                          await showDialog<void>(
+                            context: context,
+                            builder: (_) =>
+                                const AlertDialog(content: Text('播放信息弹窗')),
+                          );
+                        },
+                        onBack: () => Navigator.of(context).maybePop(),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      );
+      await tester.pumpWidget(
+        ModularApp(
+          module: module,
+          child: Builder(
+            builder: (context) => MaterialApp.router(
+              theme: ThemeData.dark(),
+              routerConfig: ModularApp.routerConfigOf(context),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('打开播放器'));
+      await tester.pumpAndSettle();
+      final slider = find.byType(TvSliderTile);
+      final control = find
+          .descendant(of: slider, matching: find.byType(GestureDetector))
+          .first;
+      Focus.of(tester.element(control)).requestFocus();
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.pumpAndSettle();
+      expect(seeks, isEmpty);
+      Focus.of(tester.element(control)).requestFocus();
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.select);
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      await tester.pumpAndSettle();
+      expect(seeks.length, 1);
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.text('按确认调节 · 上下换项'), findsOneWidget);
+      expect(find.text('暂停'), findsOneWidget);
+      expect(exits, 0);
+      await tester.tap(find.text('播放信息'));
+      await tester.pumpAndSettle();
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.text('播放信息弹窗'), findsNothing);
+      expect(find.text('暂停'), findsOneWidget);
+      expect(exits, 0);
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.text('暂停'), findsNothing);
+      expect(exits, 0);
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.text('打开播放器'), findsOneWidget);
+      expect(exits, 1);
+      expect(tester.takeException(), isNull);
     },
   );
 }

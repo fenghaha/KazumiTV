@@ -1,3 +1,5 @@
+import 'package:kazumi/tv/tv_mode.dart';
+import 'package:kazumi/tv/settings/tv_rules_page.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:kazumi/pages/plugin_editor/plugin_editor_page.dart';
 import 'package:kazumi/pages/plugin_editor/plugin_shop_page.dart';
@@ -13,13 +15,13 @@ final pluginModule = createModule(
     c
       ..route(
         '/',
-        child: (context, state) => PluginViewPage(
+        child: (context, state) => TvMode.enabled ? TvRulesPage(controller: inject<PluginsController>()) : PluginViewPage(
           controller: inject<PluginsController>(),
         ),
       )
       ..route(
         '/shop',
-        child: (context, state) => PluginShopPage(
+        child: (context, state) => TvMode.enabled ? TvRulesPage(controller: inject<PluginsController>()) : PluginShopPage(
           controller: inject<PluginsController>(),
         ),
       )

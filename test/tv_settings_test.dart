@@ -1,4 +1,7 @@
 import 'dart:async';
+
+import 'package:kazumi/tv/settings/tv_rule_subscriptions.dart';
+
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -86,7 +89,16 @@ void main() {
         pluginJsonWriter: (json) async => writes.add(json),
         errorReporter: (_, error, stack) {},
       );
-      await open(tester, TvRulesPage(controller: controller));
+      await open(
+        tester,
+        TvRulesPage(
+          controller: controller,
+          subscriptions: TvRuleSubscriptions(
+            read: () => [],
+            write: (_) async {},
+          ),
+        ),
+      );
       expect(controller.pluginList, isEmpty);
       expect(writes, isEmpty);
       await tester.tap(find.text('规则商店'));
@@ -109,7 +121,16 @@ void main() {
         pluginJsonWriter: (json) async => writes.add(json),
         errorReporter: (_, error, stack) {},
       )..pluginList.add(_rule('Home source'));
-      await open(tester, TvRulesPage(controller: controller));
+      await open(
+        tester,
+        TvRulesPage(
+          controller: controller,
+          subscriptions: TvRuleSubscriptions(
+            read: () => [],
+            write: (_) async {},
+          ),
+        ),
+      );
       await tester.tap(find.text('移除'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('保留'));
@@ -145,7 +166,16 @@ void main() {
           pluginJsonWriter: (_) async {},
           errorReporter: (_, error, stack) {},
         );
-        await open(tester, TvRulesPage(controller: controller));
+        await open(
+          tester,
+          TvRulesPage(
+            controller: controller,
+            subscriptions: TvRuleSubscriptions(
+              read: () => [],
+              write: (_) async {},
+            ),
+          ),
+        );
         await tester.tap(find.text('规则商店'));
         await tester.pumpAndSettle();
         await focusCatalog(tester, 'Beta');
@@ -189,7 +219,16 @@ void main() {
         pluginJsonWriter: (_) async {},
         errorReporter: (_, error, stack) {},
       );
-      await open(tester, TvRulesPage(controller: controller));
+      await open(
+        tester,
+        TvRulesPage(
+          controller: controller,
+          subscriptions: TvRuleSubscriptions(
+            read: () => [],
+            write: (_) async {},
+          ),
+        ),
+      );
       await tester.tap(find.text('规则商店'));
       await tester.pumpAndSettle();
       await focusCatalog(tester, 'Beta');
@@ -213,10 +252,16 @@ void main() {
       pluginJsonWriter: (json) async => writes.add(json),
       errorReporter: (_, error, stack) {},
     );
-    await open(tester, TvRulesPage(controller: controller));
+    await open(
+      tester,
+      TvRulesPage(
+        controller: controller,
+        subscriptions: TvRuleSubscriptions(read: () => [], write: (_) async {}),
+      ),
+    );
     await tester.tap(find.text('导入规则'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('JSON / kazumi://'));
+    await tester.tap(find.text('https://… / JSON / kazumi://'));
     await tester.pumpAndSettle();
     await tester.enterText(
       find.byType(TextField),
@@ -236,4 +281,92 @@ void main() {
     expect(writes.length, 1);
     expect(tester.takeException(), isNull);
   }, variant: TargetPlatformVariant.only(TargetPlatform.linux));
+  testWidgets(
+    'URL paste previews, persists subscription and update-all avoids same-name store overwrite',
+    (tester) async {
+      var stored = <String>[];
+      var version = '1.0';
+      var storeDownloads = 0;
+      final subscriptions = TvRuleSubscriptions(
+        read: () => stored,
+        write: (v) async => stored = v,
+        fetch: (_) async =>
+            jsonEncode((_rule('Home')..version = version).toJson()),
+      );
+      final controller = PluginsController(
+        catalogLoader: () async => [_catalog('Home')..version = '9.0'],
+        pluginLoader: (_) async {
+          storeDownloads++;
+          return _rule('Home')..version = '9.0';
+        },
+        pluginJsonWriter: (_) async {},
+      );
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+            SystemChannels.platform,
+            (call) async => call.method == 'Clipboard.getData'
+                ? {'text': 'http://example.test/rule'}
+                : null,
+          );
+      addTearDown(
+        () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(SystemChannels.platform, null),
+      );
+      await open(
+        tester,
+        TvRulesPage(controller: controller, subscriptions: subscriptions),
+        size: const Size(960, 540),
+      );
+      await tester.tap(find.text('导入规则'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('粘贴'));
+      await tester.pumpAndSettle();
+      expect(find.text('可导入 1 条 · 不可导入 0 条'), findsOneWidget);
+      await tester.tap(find.text('确认导入 1 条'));
+      await tester.pumpAndSettle();
+      expect(subscriptions.sourceFor('Home'), 'http://example.test/rule');
+      version = '2.0';
+      await tester.tap(find.text('更新已安装规则'));
+      await tester.pumpAndSettle();
+      expect(controller.pluginList.single.version, '2.0');
+      expect(storeDownloads, 0);
+      expect(tester.takeException(), isNull);
+    },
+  );
+  testWidgets(
+    'remote reaches catalog entries below the initial viewport and returns to first',
+    (tester) async {
+      final controller = PluginsController(
+        catalogLoader: () async => [
+          for (var i = 0; i < 18; i++) _catalog('Rule $i'),
+        ],
+        pluginJsonWriter: (_) async {},
+      );
+      await open(
+        tester,
+        TvRulesPage(
+          controller: controller,
+          subscriptions: TvRuleSubscriptions(
+            read: () => [],
+            write: (_) async {},
+          ),
+        ),
+        size: const Size(960, 540),
+      );
+      await tester.tap(find.text('规则商店'));
+      await tester.pumpAndSettle();
+      await focusCatalog(tester, 'Rule 0');
+      for (var i = 0; i < 17; i++) {
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+        await tester.pumpAndSettle();
+      }
+      expect(hasCatalogFocus('Rule 17'), isTrue);
+      for (var i = 0; i < 17; i++) {
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+        await tester.pumpAndSettle();
+      }
+      expect(hasCatalogFocus('Rule 0'), isTrue);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

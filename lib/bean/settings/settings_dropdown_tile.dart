@@ -1,3 +1,5 @@
+import 'package:kazumi/tv/tv_mode.dart';
+import 'package:kazumi/tv/settings/tv_choice_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:kazumi/bean/settings/settings_list.dart';
 import 'package:kazumi/bean/widget/kazumi_menu.dart';
@@ -37,6 +39,19 @@ class _SettingsDropdownTileState<T> extends State<SettingsDropdownTile<T>> {
   @override
   Widget build(BuildContext context) {
     final enabled = widget.enabled && widget.options.isNotEmpty;
+    if (TvMode.enabled) {
+      return SettingsTile(
+        title: widget.title, leading: widget.leading, description: widget.description,
+        enabled: enabled,
+        value: Text(widget.options[widget.value] ?? widget.fallbackLabel),
+        trailing: const Icon(Icons.arrow_drop_down_rounded),
+        onPressed: (context) => showTvChoices(context, title: widget.title, choices: [
+          for (final entry in widget.options.entries)
+            TvChoice(label: Text(entry.value), selected: entry.key == widget.value,
+              onSelected: () => widget.onChanged(entry.key)),
+        ]),
+      );
+    }
     return SettingsTile(
       leading: widget.leading,
       title: widget.title,

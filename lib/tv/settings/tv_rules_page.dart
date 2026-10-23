@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:kazumi/tv/settings/tv_rule_subscriptions.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:kazumi/modules/plugin/plugin_http_module.dart';
 import 'package:kazumi/plugins/plugins.dart';
@@ -15,16 +17,29 @@ import 'package:kazumi/tv/widgets/tv_focusable.dart';
 /// Uses the upstream catalog, importer and persistence without another rule
 /// format or a second installed-rule store.
 class TvRulesPage extends StatefulWidget {
-  const TvRulesPage({super.key, required this.controller});
+  const TvRulesPage({super.key, required this.controller, this.subscriptions});
 
   final PluginsController controller;
+  final TvRuleSubscriptions? subscriptions;
 
   @override
   State<TvRulesPage> createState() => _TvRulesPageState();
 }
 
 class _TvRulesPageState extends State<TvRulesPage> {
+  late final _subscriptions = widget.subscriptions ?? TvRuleSubscriptions();
+  final _filter = TextEditingController();
+  String _query = '';
   bool _shop = false;
+
+  @override
+  void dispose() {
+    _filter.dispose();
+    super.dispose();
+  }
+
+  bool _matches(String name) =>
+      name.toLowerCase().contains(_query.toLowerCase());
   bool _busy = false;
   bool _loadingCatalog = false;
   String? _catalogError;
@@ -77,6 +92,9 @@ class _TvRulesPageState extends State<TvRulesPage> {
     () async {
       // This controller checks requiresNewerClient and payload identity before
       // saving, for both a new installation and an update.
+      if (_subscriptions.sourceFor(name) != null) {
+        return _subscriptions.update(widget.controller, name: name);
+      }
       final result = await widget.controller.tryUpdatePluginByName(name);
       return switch (result) {
         PluginUpdateResult.updated => '${installing ? '已安装' : '已更新'}：$name',
@@ -89,10 +107,27 @@ class _TvRulesPageState extends State<TvRulesPage> {
   );
 
   Future<void> _updateAll() => _run(() async {
-    final result = await widget.controller.tryUpdateAllPlugin();
-    if (result.hasNoCandidates) return '没有可更新的规则。';
-    return '更新 ${result.updated} 条 · 不兼容 ${result.requiresNewerClient} 条'
-        ' · 失败 ${result.failed} 条 · 跳过 ${result.notNewer} 条';
+    final subscriptionResult = await _subscriptions.update(widget.controller);
+    var updated = 0, failed = 0;
+    try {
+      await widget.controller.ensurePluginCatalog();
+      for (final rule in widget.controller.pluginList.toList()) {
+        if (_subscriptions.sourceFor(rule.name) != null) continue;
+        if (widget.controller.pluginUpdateStatus(rule) !=
+            PluginUpdateAvailability.updatable) {
+          continue;
+        }
+        final result = await widget.controller.tryUpdatePluginByName(rule.name);
+        if (result == PluginUpdateResult.updated) {
+          updated++;
+        } else if (result != PluginUpdateResult.notNewer) {
+          failed++;
+        }
+      }
+    } catch (_) {
+      return '$subscriptionResult · 商店暂不可用';
+    }
+    return '$subscriptionResult · 商店更新 $updated 条，未更新 $failed 条';
   });
 
   Future<void> _remove(Plugin plugin) async {
@@ -117,7 +152,7 @@ class _TvRulesPageState extends State<TvRulesPage> {
     );
     if (!mounted || confirmed != true) return;
     await _run(() async {
-      await widget.controller.removePlugin(plugin);
+      await _subscriptions.remove(widget.controller, plugin);
       return '已移除：${plugin.name}';
     });
   }
@@ -126,7 +161,10 @@ class _TvRulesPageState extends State<TvRulesPage> {
     if (_busy) return;
     final imported = await showDialog<int>(
       context: context,
-      builder: (_) => _RuleImportDialog(controller: widget.controller),
+      builder: (_) => _RuleImportDialog(
+        controller: widget.controller,
+        subscriptions: _subscriptions,
+      ),
     );
     if (mounted && imported != null) {
       setState(() {
@@ -162,7 +200,7 @@ class _TvRulesPageState extends State<TvRulesPage> {
   Widget build(BuildContext context) => TvPageScaffold(
     title: '规则与播放源',
     subtitle:
-        '不预装播放源 · 支持上游规则 JSON 与 kazumi:// 链接 · 规则 API ${ApiEndpoints.apiLevel}',
+        '不预装播放源 · 支持订阅链接、JSON 与 kazumi:// · 规则 API ${ApiEndpoints.apiLevel}',
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -215,12 +253,26 @@ class _TvRulesPageState extends State<TvRulesPage> {
               ),
             ),
           ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 8),
+        TvTextInput(
+          controller: _filter,
+          hintText: '搜索规则名称',
+          onChanged: (value) => setState(() => _query = value),
+        ),
+        const SizedBox(height: 8),
         Expanded(
           child: Observer(
             builder: (_) {
-              final installed = widget.controller.pluginList.toList();
-              final catalog = widget.controller.pluginHTTPList.toList();
+              final installed = widget.controller.pluginList
+                  .where((p) => _matches(p.name))
+                  .toList();
+              final catalog = widget.controller.pluginHTTPList
+                  .where((p) => _matches(p.name))
+                  .toList();
+              if (_query.isNotEmpty &&
+                  (_shop ? catalog.isEmpty : installed.isEmpty)) {
+                return _empty('没有匹配的规则');
+              }
               if (_shop) {
                 if (catalog.isEmpty) {
                   return _empty(
@@ -231,19 +283,21 @@ class _TvRulesPageState extends State<TvRulesPage> {
                         : '商店暂无规则，也可以自行导入规则。',
                   );
                 }
-                return ListView.builder(
+                return SingleChildScrollView(
                   key: const PageStorageKey('tv-rule-catalog'),
-                  itemCount: catalog.length,
-                  itemBuilder: (_, index) => _catalogRow(catalog[index]),
+                  child: Column(
+                    children: [for (final item in catalog) _catalogRow(item)],
+                  ),
                 );
               }
               if (installed.isEmpty) {
                 return _empty('还没有播放源\n选择“规则商店”安装，或使用“导入规则”添加自己的来源。');
               }
-              return ListView.builder(
+              return SingleChildScrollView(
                 key: const PageStorageKey('tv-installed-rules'),
-                itemCount: installed.length,
-                itemBuilder: (_, index) => _installedRow(installed[index]),
+                child: Column(
+                  children: [for (final rule in installed) _installedRow(rule)],
+                ),
               );
             },
           ),
@@ -313,18 +367,22 @@ class _TvRulesPageState extends State<TvRulesPage> {
         : api > ApiEndpoints.apiLevel
         ? ' · 需要更高版本客户端'
         : '';
-    final label = switch (status) {
-      PluginUpdateAvailability.unknown => '检查更新',
-      PluginUpdateAvailability.notInCatalog => '商店未收录',
-      PluginUpdateAvailability.latest => '已是最新',
-      PluginUpdateAvailability.updatable => '更新',
-    };
+    final subscribed = _subscriptions.sourceFor(plugin.name) != null;
+    final label = subscribed
+        ? '更新订阅'
+        : switch (status) {
+            PluginUpdateAvailability.unknown => '检查更新',
+            PluginUpdateAvailability.notInCatalog => '商店未收录',
+            PluginUpdateAvailability.latest => '已是最新',
+            PluginUpdateAvailability.updatable => '更新',
+          };
     final canUpdate =
+        subscribed ||
         status == PluginUpdateAvailability.unknown ||
         status == PluginUpdateAvailability.updatable;
     return _row(
       plugin.name,
-      '版本 ${plugin.version} · API ${plugin.api}$compatibility',
+      '版本 ${plugin.version} · API ${plugin.api}$compatibility${subscribed ? ' · 已订阅' : ''}',
       [
         _button(
           label,
@@ -379,7 +437,11 @@ class _TvRulesPageState extends State<TvRulesPage> {
 }
 
 class _RuleImportDialog extends StatefulWidget {
-  const _RuleImportDialog({required this.controller});
+  final TvRuleSubscriptions subscriptions;
+  const _RuleImportDialog({
+    required this.controller,
+    required this.subscriptions,
+  });
   final PluginsController controller;
 
   @override
@@ -391,6 +453,9 @@ class _RuleImportDialogState extends State<_RuleImportDialog> {
   PluginImportParseResult? _preview;
   String? _error;
   bool _saving = false;
+  bool _checking = false;
+  Uri? _source;
+  bool get _busy => _saving || _checking;
 
   @override
   void dispose() {
@@ -398,22 +463,60 @@ class _RuleImportDialogState extends State<_RuleImportDialog> {
     super.dispose();
   }
 
-  void _inspect() {
-    if (_saving) return;
+  Future<void> _inspect() async {
+    if (_busy) return;
     setState(() {
-      _preview = PluginImportParser.parse(_text.text);
+      _checking = true;
+      _preview = null;
+      _source = null;
       _error = null;
     });
+    try {
+      final source = TvRuleSubscriptions.inputUrl(_text.text);
+      final preview = source == null
+          ? PluginImportParser.parse(_text.text)
+          : await widget.subscriptions.inspect(source);
+      if (mounted) {
+        setState(() {
+          _source = source;
+          _preview = preview;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _error = '无法读取规则链接。请检查网络和地址，确认返回的是规则 JSON。');
+    } finally {
+      if (mounted) setState(() => _checking = false);
+    }
+  }
+
+  Future<void> _paste() async {
+    if (_busy) return;
+    try {
+      final data = await Clipboard.getData(Clipboard.kTextPlain);
+      if (!mounted || _busy) return;
+      if (data?.text == null || data!.text!.trim().isEmpty) {
+        setState(() => _error = '剪贴板为空，可直接输入或用手机扫码发送链接。');
+        return;
+      }
+      _text.text = data.text!;
+      await _inspect();
+    } catch (_) {
+      if (mounted) setState(() => _error = '无法读取剪贴板，可使用扫码输入。');
+    }
   }
 
   Future<void> _save() async {
     final preview = _preview;
-    if (_saving || preview == null || preview.plugins.isEmpty) return;
+    if (_busy || preview == null || preview.plugins.isEmpty) return;
     setState(() => _saving = true);
     try {
       // Parser excludes newer API levels. Do not send rejected entries through
       // updatePlugins, whose job is persistence, not compatibility validation.
-      await widget.controller.updatePlugins(preview.plugins);
+      await widget.subscriptions.install(
+        widget.controller,
+        preview.plugins,
+        source: _source,
+      );
       if (mounted) Navigator.of(context).pop(preview.plugins.length);
     } catch (_) {
       if (mounted) setState(() => _error = '保存失败，请重试。原有规则已保留。');
@@ -440,24 +543,27 @@ class _RuleImportDialogState extends State<_RuleImportDialog> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Text(
-                  '输入规则 JSON 或 kazumi:// 链接。可以用手机扫码粘贴多条规则。',
+                  '粘贴 HTTP/HTTPS 规则链接，导入后可一键更新。也支持 JSON、kazumi:// 和手机扫码输入。',
                   style: TextStyle(color: TvTheme.muted),
                 ),
                 const SizedBox(height: 16),
                 TvTextInput(
                   controller: _text,
                   label: '规则内容',
-                  hintText: 'JSON / kazumi://',
+                  hintText: 'https://… / JSON / kazumi://',
                   multiline: true,
                   maxLength: 131072,
                   autofocus: true,
-                  enabled: !_saving,
+                  enabled: !_busy,
                   onChanged: (_) => setState(() {
                     _preview = null;
+                    _source = null;
                     _error = null;
                   }),
                   onSubmitted: (_) => _inspect(),
                 ),
+                if (_checking) const LinearProgressIndicator(),
+                if (_source != null) const Text('导入时保存订阅来源，以后可从此链接更新。'),
                 if (preview != null) ...[
                   const SizedBox(height: 16),
                   Text(
@@ -497,11 +603,18 @@ class _RuleImportDialogState extends State<_RuleImportDialog> {
             child: const Text('取消'),
           ),
           TvFocusable(
-            onPressed: _saving ? null : _inspect,
+            focusableWhenDisabled: true,
+            onPressed: _busy ? null : _paste,
+            child: const Text('粘贴'),
+          ),
+          TvFocusable(
+            focusableWhenDisabled: true,
+            onPressed: _busy ? null : _inspect,
             child: const Text('检查内容'),
           ),
           TvFocusable(
-            onPressed: _saving || preview == null || preview.plugins.isEmpty
+            focusableWhenDisabled: true,
+            onPressed: _busy || preview == null || preview.plugins.isEmpty
                 ? null
                 : _save,
             child: Text(
