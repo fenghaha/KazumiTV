@@ -34,6 +34,26 @@ Misaka 更适合需要持久弹幕库、元数据与 Emby Webhook 的后续阶�
 最终编译提交 `e87e09996f75d6dd18bb304a74a85989039d30e7`，包为 `r4-danmaku1`，
 保留 r4 的订阅、设置和播放器焦点改动。早期 r3 构建只是阶段候选。
 
+2026-10-24 用户要求统一主分支与交接后，本扩展已快进合入主开发分支
+`codex/kazumitv`，Mac 主工作副本为后续写入入口；独立弹幕工作树只作历史保留。
+UBT `/home/bw/work/KazumiTV` 同步主分支，独立构建目录留存原始测试/打包证据。
+
+## 后续构建
+
+使用已有 UBT Flutter/JDK/SDK 环境、原私有签名配置；先测试再构建，避免测试和
+原生编译并发。为避免空闲 Gradle heap 与测试叠加耗尽 UBT 内存，构建时显式设置：
+
+```bash
+export GRADLE_OPTS='-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=1 -Dorg.gradle.jvmargs=-Xmx2048m -Dorg.gradle.project.kotlin.compiler.execution.strategy=in-process'
+flutter test --concurrency=1
+tool/tv/build.sh --dart-define-from-file=/private/path/defines.json
+```
+
+私有 defines 文件按需含 `KAZUMI_DANMAKU_BASE_URL`，不要提交该文件或将家庭地址
+硬编码到源码。编译默认地址不会从旧 APK 或上次命令自动继承；未传参数时官方路径
+仍需有效应用凭据，也可安装后通过弹幕设置配置自建服务。已交付 APK/清单属于
+固定功能提交 `e87e0999`，文档提交与默认修订标签调整不代表重新验收过设备。
+
 ## 验证与边界
 
 UBT Flutter 3.47.7 的最终完整测试 293 项通过，11 项目标回归通过。

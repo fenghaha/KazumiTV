@@ -4,7 +4,7 @@
 
 ## 开发边界
 
-- `lib/tv/` 保存独立电视展示层；数据和行为复用原版 controller、repository、规则引擎与播放器。原文件只保留入口和展示切换。
+- `lib/tv/` 保存独立电视展示层；数据和行为复用原版 controller、repository、规则引擎与播放器。原文件尽量只保留入口和展示切换；可选自建弹幕需要的四处明确扩展以 `tool/tv/upstream.json` 的精确哈希和理由单列，见 [弹幕接入说明](tool/tv/DANMAKU.md)。
 - **不伪造客户端版本，不提高规则 API 等级，不绕过规则兼容检查。** `pubspec.yaml` 版本、`ApiEndpoints`、规则 JSON、嗅探及播放数据模型均随上游。
 - `tool/tv/upstream.json` 记录已合入的真实上游提交、版本和 API；电视修订由 `KAZUMI_TV_REVISION` 单独表示。当前基线 `db5202611902fe67c449e0a53bc05c3a75b4e8b0`，Kazumi `2.4.1+20401`，API 9。
 - Android TV 打包由 `android/tv.gradle` 与 flavor manifest 负责，仅 `KAZUMI_BUILD_TV=1` 时生效，原版无 flavor 构建入口保留。
@@ -20,9 +20,19 @@
 - 滑块/播放进度：确认进入、左右调节、上下离开，返回先结束调节。播放器按弹窗、进度调节、控制栏、播放页逐层返回。
 - 实机验收和固定 APK/签名/测试记录以 KnowledgeHub `KazumiTV-开发与设备验收.md` 的 r4 节为准；播放源和弹幕匹配由独立桥接会话处理，不以界面测试代替媒体验收。
 
+## r4-danmaku1 与当前接续入口（2026-10-24）
+
+- 自建弹幕、真实分集 ID、Bangumi 别名和专用非日志网络客户端已合入主开发分支 `codex/kazumitv`；包含 r4 的订阅/设置/遥控修复。真实上游仍是 `db5202611902… / 2.4.1+20401 / API 9`，没有向官方上游 main 推送。
+- 已交付包的功能代码为 `e87e09996f75d6dd18bb304a74a85989039d30e7`，293 项完整测试、11 项目标回归、静态分析与签名校验通过；之后的文档/分支对齐不代表重建过 APK。两种 ARM 包及清单保留在主工程 `build/releases/r4-danmaku1/`。
+- 弹幕设置可填自建兼容 API；私有发布可用 `--dart-define=KAZUMI_DANMAKU_BASE_URL=...` 设置默认地址。该值必须在每次重建时明确传入，或安装后在设置页填写；没有内置默认地址的普通源码构建仍走官方端点，需要自己有效的官方凭据。真实家庭地址以 KnowledgeHub 专题为准，不硬编码进源码。
+- Emby 桥接、danmu_api 部署与 AP 出站规则各自维护，运行事实见 KnowledgeHub `KazumiTV-Emby桥接.md`、`KazumiTV-弹幕服务与故障处理.md`；东京喰种四季源名、媒体跳转修复、弹幕服务与电视验收是不同状态。
+- 主会话继续开发前核 `git status`、`git log -1`，读 [弹幕接入说明](tool/tv/DANMAKU.md) 并跑契约检查。当前 Mac/UBT 主工程均可接续；独立弹幕工作树保留为历史，不再作为并行写入端。设备画面/声音/弹幕时间轴仍待海信与极米分别验收。
+
 ## 构建
 
 使用 `pubspec.yaml` 要求的 Flutter SDK、JDK 17 与 Android SDK/NDK。Flutter 版本随上游更新，不在 TV 脚本另锁一份。当前本机开发，UBT 的独立 Flutter 3.47.7 环境用于 Linux 构建；不要覆盖 Muse 的旧 SDK/工作区。
+
+`tool/tv/build.sh` 默认使用单 Gradle worker、2 GiB JVM、Kotlin in-process 和非持久 daemon；显式 `GRADLE_OPTS` 可覆盖。测试与打包串行执行，避免共享 UBT 再次耗尽内存。
 
 ```bash
 flutter pub get
@@ -38,7 +48,7 @@ APK 位于 `build/app/outputs/flutter-apk/app-{ABI}-livingroom-release.apk`。�
 
 2026-10-23 交付的 r1 已在 UBT 使用固定私有签名构建，两种 ARM 包均通过证书校验；它们不是上述未配置签名变量的开发包。后续覆盖升级必须继续指定同一签名配置。实际私有文件位置、252 项测试结果、APK 哈希及两台设备待验状态记录在 KnowledgeHub 的 `KazumiTV-开发与设备验收.md`；APK 的功能源码提交是 `0fc86f1b958795fddcab94bd30172dba78dd4116`。
 
-弹弹凭据仍走上游 `DANDANAPI_APPID` / `DANDANAPI_KEY` 编译参数；可用私有配置文件通过 `tool/tv/build.sh --dart-define-from-file=/private/path/defines.json` 注入自己合法持有的凭据。没有凭据的构建不承诺在线弹幕可用，也不从原 APK 提取密钥。
+官方弹弹端点的凭据仍走上游 `DANDANAPI_APPID` / `DANDANAPI_KEY` 编译参数；可用私有配置文件通过 `tool/tv/build.sh --dart-define-from-file=/private/path/defines.json` 注入自己合法持有的凭据。没有凭据时应配置自己的兼容服务，不从原 APK 提取密钥。
 
 Bangumi 镜像的受保护搜索也使用上游 `KAZUMI_APPID` / `KAZUMI_KEY`。个人构建没有这些凭据时，TV 首次欢迎仅将尚未设置的番剧访问模式选为公共 API 直连，避免默认镜像搜索带空签名；明确选择/导入的设置保留，可在网络设置改为 ECH。没有修改上游网络协议或签名逻辑。
 
@@ -59,6 +69,8 @@ tool/tv/build.sh
 ```
 
 `record_upstream.py` 要求该上游提交已是 HEAD 的祖先，只记录实际合入版本，不修改应用版本。`check_upstream.py` 对比规则/网络/数据/嗅探/播放服务与该基线，并核版本/API，发现意外分叉即失败。新上游若调整 controller 或路由接口，适配 `lib/tv/` 的调用方；不能通过把 API 号调大来消除不兼容提示。
+
+`reviewedExtensions` 只允许已记录原因且 SHA256 完全一致的四处自建弹幕扩展。合并上游时逐处审查和回归后再更新相应哈希；未知文件或意外改动仍须失败，不能把本地 HEAD 登记为官方上游。
 
 确认 APK、来源兼容与两台设备回归后再合回开发分支。TV 分支不自动下载/安装官方手机 APK；规则自身的商店、安装和更新机制继续复用上游。
 

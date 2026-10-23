@@ -6,6 +6,7 @@ This is a downstream presentation branch of Predidit/Kazumi. The user chose a ci
 
 - Put TV presentation, input and adapters under `lib/tv/`; prefer conditional hooks in existing entry points over rewriting original screens.
 - Leave rule parsing, `apiLevel`, network clients, storage schema and playback resolution upstream-owned. Never spoof a version to get a source accepted.
+- The user-requested optional self-hosted danmaku extension is explicitly reviewed in `tool/tv/DANMAKU.md`. Its API/client/Dio-factory/settings-key hooks are pinned by exact hashes in `reviewedExtensions`; retain the official default path and do not broaden this exception without a concrete task and regression evidence.
 - `tool/tv/upstream.json` records the actually merged upstream commit. Run `check_upstream.py`; after merging upstream, update the record with `record_upstream.py`.
 - App name is **KazumiTV**. Keep the upstream semantic/build version. Track TV changes separately with `KAZUMI_TV_REVISION`.
 - Android packaging is an opt-in overlay. Use `tool/tv/build.sh`; unflavored upstream builds must continue working.
@@ -22,5 +23,6 @@ This is a downstream presentation branch of Predidit/Kazumi. The user chose a ci
 
 - Run rule compatibility checks, `flutter analyze --no-fatal-infos`, upstream tests and TV widget/service tests, then build APKs. Preserve upstream baseline info lints rather than changing unrelated code.
 - Actual IME/remote/codec/audio/danmaku acceptance must be recorded separately on both devices. A compiled APK and mocked UI test are not device acceptance.
+- Keep test/build workloads sequential on UBT. Use one Gradle worker, a 2 GiB Gradle JVM, in-process Kotlin and no persistent daemon for this project's APK builds; do not stop unrelated services/VMs or change host memory allocation to build the app. See `tool/tv/DANMAKU.md` for the exact environment options and the prior memory-pressure incident.
 - Keep signing material, API credentials and private config outside Git. The independent Emby bridge is a separate project; do not bake home endpoints or credentials into the client.
 - Record important decisions and current build/acceptance status in KnowledgeHub's KazumiTV project. Do not modify production services merely to test client UI.
