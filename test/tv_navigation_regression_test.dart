@@ -8,6 +8,76 @@ import 'package:kazumi/tv/widgets/tv_focusable.dart';
 import 'package:kazumi/tv/widgets/tv_scroll_boundary.dart';
 
 void main() {
+  testWidgets(
+    'horizontal settings controls remain reachable before exiting to the rail',
+    (tester) async {
+      final nav = TvSettingsNavigationController()..selectedPath = 'sync';
+      final left = FocusNode(debugLabel: 'Bangumi');
+      final right = FocusNode(debugLabel: 'WebDAV');
+      addTearDown(nav.dispose);
+      addTearDown(left.dispose);
+      addTearDown(right.dispose);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: TvTheme.dark,
+          home: Scaffold(
+            body: Row(
+              children: [
+                SizedBox(
+                  width: 180,
+                  child: nav.menu(
+                    TvFocusable(
+                      focusNode: nav.menuNode('sync'),
+                      autofocus: true,
+                      onPressed: nav.enterDetails,
+                      child: const Text('同步菜单'),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: nav.pane(
+                    TvScrollBoundary(
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: TvFocusable(
+                              focusNode: left,
+                              onPressed: () {},
+                              child: const Text('Bangumi'),
+                            ),
+                          ),
+                          Expanded(
+                            child: TvFocusable(
+                              focusNode: right,
+                              onPressed: () {},
+                              child: const Text('WebDAV'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      await tester.pumpAndSettle();
+      expect(left.hasFocus, isTrue);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      await tester.pumpAndSettle();
+      expect(right.hasFocus, isTrue);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+      await tester.pumpAndSettle();
+      expect(left.hasFocus, isTrue);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+      await tester.pumpAndSettle();
+      expect(nav.menuNode('sync').hasFocus, isTrue);
+    },
+  );
   testWidgets('settings Left and Back return to rail, Right restores detail', (
     tester,
   ) async {

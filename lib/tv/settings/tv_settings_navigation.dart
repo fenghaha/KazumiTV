@@ -117,6 +117,22 @@ class TvSettingsNavigationController extends ChangeNotifier {
       if (!editing &&
           event is KeyDownEvent &&
           event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+        // Let horizontal controls (e.g. Bangumi/WebDAV cards or a field's QR
+        // button) reach their left sibling before crossing back to the rail.
+        final hasLeft =
+            node != null &&
+            (node.nearestScope?.traversalDescendants.any(
+                  (other) =>
+                      other != node &&
+                      other is! FocusScopeNode &&
+                      other.context?.mounted == true &&
+                      !other.rect.isEmpty &&
+                      other.rect.center.dx < node.rect.left &&
+                      other.rect.bottom > node.rect.top &&
+                      other.rect.top < node.rect.bottom,
+                ) ??
+                false);
+        if (hasLeft) return KeyEventResult.ignored;
         focusMenu();
         return KeyEventResult.handled;
       }
