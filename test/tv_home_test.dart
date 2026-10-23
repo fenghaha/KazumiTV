@@ -140,6 +140,43 @@ void main() {
     });
   }
 
+  testWidgets(
+    'home needs two Back presses, coalesces key/system, and navigation cancels exit',
+    (tester) async {
+      var exits = 0;
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+            if (call.method == 'SystemNavigator.pop') exits++;
+            return null;
+          });
+      addTearDown(
+        () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(SystemChannels.platform, null),
+      );
+      await setTvSize(tester);
+      await tester.pumpWidget(app(TvHomePage(data: _FixtureData())));
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(exits, 0);
+      expect(find.text('再按一次返回退出应用'), findsOneWidget);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      await tester.pumpAndSettle();
+      expect(find.text('再按一次返回退出应用'), findsNothing);
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 3));
+      expect(find.text('再按一次返回退出应用'), findsNothing);
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(exits, 0);
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(exits, 1);
+    },
+  );
+
   testWidgets('remote moves from navigation to feature and opens the subject', (
     tester,
   ) async {

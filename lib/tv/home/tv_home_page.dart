@@ -11,6 +11,7 @@ import 'package:kazumi/services/player/history_playback_service.dart';
 import 'package:kazumi/services/plugin/rule_engine_models.dart'
     show RuleCancelToken;
 import 'package:kazumi/tv/home/tv_home_data.dart';
+import 'package:kazumi/tv/player/tv_playback_back.dart';
 import 'package:kazumi/tv/input/tv_text_input.dart';
 import 'package:kazumi/tv/widgets/tv_focusable.dart';
 import 'package:kazumi/tv/widgets/tv_poster.dart';
@@ -55,10 +56,45 @@ class _TvHomePageState extends State<TvHomePage> {
   bool _openingHistory = false;
   RuleCancelToken? _resumeToken;
   double _posterWidth = 150;
+  late final TvPlaybackBackController _exitGuard = TvPlaybackBackController(
+    exit: () {
+      unawaited(SystemNavigator.pop().whenComplete(_exitGuard.exitCancelled));
+    },
+  );
+
+  bool _consumeHomeBack() {
+    if (_openingHistory) {
+      setState(_cancelResume);
+      return true;
+    }
+    if (_destination != _Destination.discover) {
+      _select(_Destination.discover);
+      _navFocus[0].requestFocus();
+      return true;
+    }
+    return false;
+  }
+
+  KeyEventResult _homeKey(KeyEvent event) {
+    if (ModalRoute.of(context)?.isCurrent == false ||
+        (event is! KeyDownEvent && event is! KeyRepeatEvent)) {
+      return KeyEventResult.ignored;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.escape ||
+        event.logicalKey == LogicalKeyboardKey.goBack) {
+      if (event is KeyDownEvent) _exitGuard.request(TvBackOrigin.key);
+      return KeyEventResult.handled;
+    }
+    _exitGuard.cancelExit();
+    return KeyEventResult.ignored;
+  }
 
   @override
   void initState() {
     super.initState();
+    _exitGuard.addListener(_onData);
+    _exitGuard.registerOverlay(this, _consumeHomeBack);
+    FocusManager.instance.addEarlyKeyEventHandler(_homeKey);
     final startupPath = (Uri.tryParse(widget.initialLocation)?.path ?? '')
         .replaceFirst(RegExp(r'/+$'), '');
     _destination = switch (startupPath) {
@@ -94,6 +130,8 @@ class _TvHomePageState extends State<TvHomePage> {
 
   @override
   void dispose() {
+    FocusManager.instance.removeEarlyKeyEventHandler(_homeKey);
+    _exitGuard.dispose();
     _resumeToken?.cancel();
     _data.removeListener(_onData);
     if (widget.data == null) _data.dispose();
@@ -105,12 +143,14 @@ class _TvHomePageState extends State<TvHomePage> {
   }
 
   void _select(_Destination destination) {
+    _exitGuard.cancelExit();
     _cancelResume();
     setState(() => _destination = destination);
     _data.refreshLocal();
   }
 
   Future<void> _open(BangumiItem item) async {
+    _exitGuard.cancelExit();
     if (_openingHistory) setState(_cancelResume);
     final focus = FocusManager.instance.primaryFocus;
     if (widget.onOpenBangumi != null) {
@@ -193,12 +233,14 @@ class _TvHomePageState extends State<TvHomePage> {
   }
 
   Future<void> _settings() async {
+    _exitGuard.cancelExit();
     if (_openingHistory) setState(_cancelResume);
     await context.pushNamed('/tv/settings');
     if (mounted) _data.refreshLocal();
   }
 
   void _submitSearch(String text) {
+    _exitGuard.cancelExit();
     final query = text.trim();
     if (query.isEmpty) return;
     _searchInput.text = query;
@@ -208,13 +250,10 @@ class _TvHomePageState extends State<TvHomePage> {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: _destination == _Destination.discover && !_openingHistory,
+      canPop: false,
       onPopInvokedWithResult: (didPop, result) {
-        if (!didPop && _openingHistory) {
-          setState(_cancelResume);
-        } else if (!didPop) {
-          _select(_Destination.discover);
-          _navFocus[0].requestFocus();
+        if (!didPop && ModalRoute.of(context)?.isCurrent != false) {
+          _exitGuard.request(TvBackOrigin.system);
         }
       },
       child: Scaffold(
@@ -360,8 +399,10 @@ class _TvHomePageState extends State<TvHomePage> {
           const SizedBox(width: 10),
           const Text('正在恢复播放…  返回键取消', style: TextStyle(fontSize: 14)),
         ] else
-          const Text(
-            '方向键浏览    确认键打开    返回键返回',
+          Text(
+            _exitGuard.awaitingSecondBack
+                ? '再按一次返回退出应用'
+                : '方向键浏览    确认键打开    连按两次返回退出',
             style: TextStyle(fontSize: 14, color: Color(0xFFAAB9CB)),
           ),
       ],
