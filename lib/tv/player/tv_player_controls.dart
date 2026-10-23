@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kazumi/tv/widgets/tv_focusable.dart';
+import 'package:kazumi/tv/player/tv_playback_back.dart';
 import 'package:kazumi/tv/settings/tv_slider_tile.dart';
 
 /// Presentation-only remote adapter. All playback operations are callbacks to
@@ -59,6 +60,17 @@ class _TvPlayerControlsState extends State<TvPlayerControls> {
   bool _modalOpen = false;
   bool _disposing = false;
   DateTime? _lastSeek;
+  TvPlaybackBackController? _back;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final next = TvPlaybackBackScope.of(context);
+    if (identical(next, _back)) return;
+    _back?.unregisterOverlay(this);
+    _back = next;
+    _back?.registerOverlay(this, _backWithinPlayer);
+  }
 
   @override
   void initState() {
@@ -87,6 +99,7 @@ class _TvPlayerControlsState extends State<TvPlayerControls> {
 
   void _showControls() {
     if (!mounted || _disposing) return;
+    _back?.cancelExit();
     _initialTimer?.cancel();
     if (!_visible) setState(() => _visible = true);
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -117,6 +130,7 @@ class _TvPlayerControlsState extends State<TvPlayerControls> {
 
   Future<void> _openPanel(Future<void> Function() open) async {
     if (_modalOpen) return;
+    _back?.cancelExit();
     _initialTimer?.cancel();
     _modalOpen = true;
     try {
@@ -133,12 +147,16 @@ class _TvPlayerControlsState extends State<TvPlayerControls> {
     }
   }
 
-  void _backWithinPlayer() {
+  bool _backWithinPlayer() {
+    if (_modalOpen) return true;
     if (_seekControl.currentState?.isEditing == true) {
       _seekControl.currentState!.finishEditing();
+      return true;
     } else if (_visible) {
       _hideControls();
+      return true;
     }
+    return false;
   }
 
   void _seekBy(int seconds, {bool repeat = false}) {
@@ -169,7 +187,9 @@ class _TvPlayerControlsState extends State<TvPlayerControls> {
     final repeat = event is KeyRepeatEvent;
     if (key == LogicalKeyboardKey.escape || key == LogicalKeyboardKey.goBack) {
       if (!repeat) {
-        if (_visible) {
+        if (_back != null) {
+          _back!.request(TvBackOrigin.key);
+        } else if (_visible) {
           _backWithinPlayer();
         } else {
           widget.onBack();
@@ -177,6 +197,7 @@ class _TvPlayerControlsState extends State<TvPlayerControls> {
       }
       return KeyEventResult.handled;
     }
+    _back?.cancelExit();
     if (key == LogicalKeyboardKey.mediaPlayPause ||
         key == LogicalKeyboardKey.mediaPlay ||
         key == LogicalKeyboardKey.mediaPause) {
@@ -234,6 +255,7 @@ class _TvPlayerControlsState extends State<TvPlayerControls> {
   @override
   void dispose() {
     _disposing = true;
+    _back?.unregisterOverlay(this);
     FocusManager.instance.removeEarlyKeyEventHandler(_handleRemote);
     _initialTimer?.cancel();
     _seekHintTimer?.cancel();
@@ -269,13 +291,15 @@ class _TvPlayerControlsState extends State<TvPlayerControls> {
   );
 
   @override
-  Widget build(BuildContext context) => PopScope(
-    canPop: !_visible,
-    onPopInvokedWithResult: (didPop, result) {
-      if (!didPop && !_modalOpen) _backWithinPlayer();
-    },
-    child: _buildControls(context),
-  );
+  Widget build(BuildContext context) => _back != null
+      ? _buildControls(context)
+      : PopScope(
+          canPop: !_visible,
+          onPopInvokedWithResult: (didPop, result) {
+            if (!didPop && !_modalOpen) _backWithinPlayer();
+          },
+          child: _buildControls(context),
+        );
 
   Widget _buildControls(BuildContext context) {
     if (!_visible) {
@@ -423,7 +447,7 @@ class _TvPlayerControlsState extends State<TvPlayerControls> {
                       ),
                       const SizedBox(height: 16),
                       const Text(
-                        '返回收起控制栏  ·  播放时左右快进 / 后退 10 秒  ·  下键选集',
+                        '返回收起菜单 · 连按两次返回退出播放 · 左右快进 / 后退 10 秒',
                         style: TextStyle(
                           fontSize: 16,
                           color: Color(0xFFAAB9CB),

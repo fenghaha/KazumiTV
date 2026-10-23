@@ -1,3 +1,5 @@
+import 'package:kazumi/tv/player/tv_playback_back.dart';
+import 'package:kazumi/tv/tv_mode.dart';
 import 'dart:async';
 
 import 'package:canvas_danmaku/models/danmaku_content_item.dart';
@@ -76,6 +78,7 @@ class _VideoPageState extends State<VideoPage>
   StreamSubscription<SyncPlayChatMessage>? _syncChatSubscription;
   late final mobx.ReactionDisposer _pipModeListener;
   LocalHistoryEntry? _desktopPipEntry;
+  final _tvBackKey = GlobalKey<TvPlaybackBackBoundaryState>();
   late ModalRoute<Object?> _route;
 
   static const Duration _offlinePlayerInitDelay = Duration(milliseconds: 400);
@@ -297,6 +300,10 @@ class _VideoPageState extends State<VideoPage>
   }
 
   void _onBackPressed() {
+    if (TvMode.enabled) {
+      _tvBackKey.currentState?.requestBack();
+      return;
+    }
     unawaited(Navigator.of(context).maybePop());
   }
 
@@ -308,7 +315,7 @@ class _VideoPageState extends State<VideoPage>
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
+    final content = PopScope(
       onPopInvokedWithResult: (bool didPop, Object? result) {
         if (didPop) {
           setState(() => _isExiting = true);
@@ -349,6 +356,7 @@ class _VideoPageState extends State<VideoPage>
         );
       }),
     );
+    return TvMode.enabled ? TvPlaybackBackBoundary(key: _tvBackKey, child: content) : content;
   }
 
   Widget _buildPlayerBody(VideoPlayerLayout layout) {

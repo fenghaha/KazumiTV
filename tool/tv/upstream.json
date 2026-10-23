@@ -5,7 +5,7 @@
   "commit": "db5202611902fe67c449e0a53bc05c3a75b4e8b0",
   "version": "2.4.1+20401",
   "apiLevel": 9,
-  "presentationRevision": 4,
+  "presentationRevision": 5,
   "reviewedExtensions": {
     "lib/request/apis/danmaku_api.dart": {
       "sha256": "5c3eb6919f51531b180a5007c6322402270183f34cebd18ada62a5964f9a0211",
