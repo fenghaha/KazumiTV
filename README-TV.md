@@ -19,13 +19,15 @@
 flutter pub get
 python3 tool/tv/check_upstream.py
 flutter analyze --no-fatal-infos
-flutter test
+flutter test --concurrency=1
 tool/tv/build.sh
 ```
 
 APK 位于 `build/app/outputs/flutter-apk/app-{ABI}-livingroom-release.apk`。分别保留 armeabi-v7a、arm64-v8a 与 x86_64 包；安装前查询设备真实 ABI / Android 版本，不能按品牌推断。
 
 默认沿用上游开发签名。长期分发可将签名配置放在仓库之外，设置 `KAZUMI_TV_KEY_PROPERTIES` 为其绝对路径；配置键为 `storeFile`（绝对路径）、`storePassword`、`keyAlias`、`keyPassword`，私钥和密码不得进 Git。发布时固定签名，升级同一 application ID 才能保留数据。
+
+2026-10-23 交付的 r1 已在 UBT 使用固定私有签名构建，两种 ARM 包均通过证书校验；它们不是上述未配置签名变量的开发包。后续覆盖升级必须继续指定同一签名配置。实际私有文件位置、252 项测试结果、APK 哈希及两台设备待验状态记录在 KnowledgeHub 的 `KazumiTV-开发与设备验收.md`；APK 的功能源码提交是 `0fc86f1b958795fddcab94bd30172dba78dd4116`。
 
 弹弹凭据仍走上游 `DANDANAPI_APPID` / `DANDANAPI_KEY` 编译参数；可用私有配置文件通过 `tool/tv/build.sh --dart-define-from-file=/private/path/defines.json` 注入自己合法持有的凭据。没有凭据的构建不承诺在线弹幕可用，也不从原 APK 提取密钥。
 
@@ -43,7 +45,7 @@ python3 tool/tv/record_upstream.py --ref upstream/main
 python3 tool/tv/check_upstream.py
 flutter pub get
 flutter analyze --no-fatal-infos
-flutter test
+flutter test --concurrency=1
 tool/tv/build.sh
 ```
 
