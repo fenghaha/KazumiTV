@@ -1,3 +1,4 @@
+import 'package:kazumi/tv/tv_mode.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:kazumi/bean/dialog/dialog_helper.dart';
@@ -371,6 +372,7 @@ class _DanmakuSettingsPageState extends State<DanmakuSettingsPage> {
                 value: defaultDanmakuFontSize,
                 min: 10,
                 max: 48,
+                divisions: TvMode.enabled ? 38 : null,
                 valueLabel: '${defaultDanmakuFontSize.floor()}',
                 onChanged: (value) =>
                     updateDanmakuFontSize(value.floorToDouble()),

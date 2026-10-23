@@ -1,3 +1,4 @@
+import 'package:kazumi/pages/settings/danmaku/danmaku_settings_sheet.dart';
 import 'dart:async';
 import 'dart:io';
 import 'package:kazumi/tv/tv_mode.dart';
@@ -1393,6 +1394,13 @@ class _PlayerItemState extends State<PlayerItem>
     await widget.changeEpisode(next.episode, currentRoad: next.road);
   }
 
+  Future<void> _showTvDanmakuSettings() => showDanmakuSettingsSheet(
+    context: context,
+    danmakuController: playerController.danmaku.canvasController,
+    onUpdateDanmakuSpeed: playerController.updateDanmakuSpeed,
+    onTimelineOffsetChanged: playerController.danmaku.clearAndInvalidateScheduledDanmakus,
+  );
+
   Widget _buildTvControls() => TvPlayerControls(
         playbackFocus: widget.keyboardFocus,
         title: videoPageController.title,
@@ -1409,6 +1417,7 @@ class _PlayerItemState extends State<PlayerItem>
         onToggleDanmaku: handleDanmaku,
         onDanmakuSources: showDanmakuSwitch,
         onDetails: showVideoInfo,
+        onDanmakuSettings: _showTvDanmakuSettings,
         onBack: widget.onBackPressed,
       );
 

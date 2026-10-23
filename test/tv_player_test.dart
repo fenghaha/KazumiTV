@@ -12,6 +12,7 @@ void main() {
   late GlobalKey<NavigatorState> navigator;
   late int sourceOpens;
   late int detailsOpens;
+  late int settingsOpens;
   late int toggles;
   late int episodeOpens;
   late List<Duration> seeks;
@@ -22,6 +23,7 @@ void main() {
     toggles = 0;
     sourceOpens = 0;
     detailsOpens = 0;
+    settingsOpens = 0;
     episodeOpens = 0;
     seeks = [];
   });
@@ -62,6 +64,9 @@ void main() {
                   },
                   onNext: () {},
                   onToggleDanmaku: () {},
+                  onDanmakuSettings: () async {
+                    settingsOpens++;
+                  },
                   onDanmakuSources: () async {
                     sourceOpens++;
                   },
@@ -154,6 +159,17 @@ void main() {
         await tester.sendKeyEvent(LogicalKeyboardKey.select);
         await tester.pumpAndSettle();
         expect(detailsOpens, 1);
+        for (var i = 0; i < 6; i++) {
+          await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+          await tester.pumpAndSettle();
+        }
+        expect(
+          FocusManager.instance.primaryFocus?.debugLabel,
+          'TV player action 6',
+        );
+        await tester.sendKeyEvent(LogicalKeyboardKey.select);
+        await tester.pumpAndSettle();
+        expect(settingsOpens, 1);
         expect(toggles, 0);
         expect(tester.takeException(), isNull);
       },
@@ -289,6 +305,7 @@ void main() {
                         onEpisodes: () async {},
                         onNext: () {},
                         onToggleDanmaku: () {},
+                        onDanmakuSettings: () async {},
                         onDanmakuSources: () async {},
                         onDetails: () async {
                           await showDialog<void>(

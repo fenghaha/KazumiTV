@@ -25,6 +25,7 @@ class TvPlayerControls extends StatefulWidget {
     required this.onToggleDanmaku,
     required this.onDanmakuSources,
     required this.onDetails,
+    required this.onDanmakuSettings,
     required this.onBack,
     this.busy = false,
   });
@@ -43,6 +44,7 @@ class TvPlayerControls extends StatefulWidget {
   final VoidCallback onToggleDanmaku;
   final Future<void> Function() onDanmakuSources;
   final Future<void> Function() onDetails;
+  final Future<void> Function() onDanmakuSettings;
   final VoidCallback onBack;
   final bool busy;
 
@@ -53,7 +55,7 @@ class TvPlayerControls extends StatefulWidget {
 class _TvPlayerControlsState extends State<TvPlayerControls> {
   final _playFocus = FocusNode(debugLabel: 'TV playback toggle');
   final _actionFocus = List.generate(
-    5,
+    6,
     (index) => FocusNode(debugLabel: 'TV player action ${index + 1}'),
   );
   List<FocusNode> get _actionNodes => [_playFocus, ..._actionFocus];
@@ -223,7 +225,7 @@ class _TvPlayerControlsState extends State<TvPlayerControls> {
       if (!repeat) _showControls();
       return KeyEventResult.handled;
     }
-    // Keep the six action buttons reachable even when Wrap changes rows or the
+    // Keep the seven action buttons reachable even when Wrap changes rows or the
     // surrounding player contributes other spatial focus candidates.
     if (_visible &&
         (key == LogicalKeyboardKey.arrowLeft ||
@@ -478,6 +480,13 @@ class _TvPlayerControlsState extends State<TvPlayerControls> {
                             Icons.info_outline_rounded,
                             () => unawaited(_openPanel(widget.onDetails)),
                             focusNode: _actionFocus[4],
+                          ),
+                          _button(
+                            '弹幕设置',
+                            Icons.tune_rounded,
+                            () =>
+                                unawaited(_openPanel(widget.onDanmakuSettings)),
+                            focusNode: _actionFocus[5],
                           ),
                         ],
                       ),
