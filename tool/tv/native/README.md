@@ -35,3 +35,14 @@ KAZUMI_TV_KEY_PROPERTIES=/private/signing/key.properties \
 ## 极米本次设备配置与验收边界
 
 本次媒体为《东京喰种》第一季首集的 3840×2160 HEVC Main 10 / FLAC，极米 Android 13 / ARM32。TLS 修复后，原自动 `gpu + mediacodec-copy` 仍观察到大量渲染丢帧和约 5 秒声画差，因此仅在这台设备保存现有 `mediacodec_embed` 选项；没有全局改写自动选择逻辑或强制其他设备直通。该媒体的直通对照读取约 5–7 MB/s，缓存可增长到 250 秒以上，声画差约 0；海信、ARM64 和其他编码仍须分别验收。低内存设置保留“跟随网络”，未将 2 MiB 小缓存作为性能修复。
+
+## 独立微基准
+
+`benchmark_crypto.c` 对已固定的 mbedTLS 3.6.7 导出接口做 8 MiB AES-256-GCM 测量；`benchmark_reader.c` 使用内核的 AVIO 读取 8 MiB，不创建解码器或绘制弹幕，输出耗时、Mbps 与 CPU 秒。用上述 NDK 的 `armv7a-linux-androideabi24-clang -O2 -fPIE -pie <source.c> -ldl -o <binary>` 编译，推送到设备临时目录并赋可执行权限。参数分别为：
+
+```text
+benchmark_crypto <libmpv.so>
+benchmark_reader <libmpv.so> <URL文本文件> <受信CA的PEM文件>
+```
+
+URL 放设备 0600 临时文件中，不进命令参数、日志或 Git；优先用原桥接媒体地址，按实际播放器 UA 解析重定向。读取基准显式开启证书校验、提供受信 CA，抑制可能包含媒体 URL 的 FFmpeg 日志。实验结束删除临时文件。微基准不代表完整设备播放或弹幕滚动验收。
