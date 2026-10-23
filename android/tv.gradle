@@ -23,3 +23,38 @@ android {
         buildTypes.release.signingConfig signingConfigs.livingroom
     }
 }
+
+// The upstream ARM32 bundle builds TLS without -O2. Replace only this library
+// before stripping/signing; every other ABI and the unflavored app stay upstream.
+def kernelSpecFile = new File(rootDir, "../tool/tv/native/kernel.json")
+def kernelFile = new File(System.getenv("KAZUMI_TV_ARM32_LIBMPV") ?:
+        new File(rootDir, "../build/native/armeabi-v7a/libmpv.so").path)
+def allowUpstreamKernel = System.getenv("KAZUMI_TV_ALLOW_UPSTREAM_KERNEL") == "1"
+tasks.configureEach { task ->
+    if (task.name == "mergeLivingroomReleaseNativeLibs") {
+        task.inputs.file(kernelSpecFile).withPropertyName("tvKernelSpec")
+        task.inputs.property("tvAllowUpstreamKernel", allowUpstreamKernel)
+        task.inputs.property("tvKernelPresent", kernelFile.isFile())
+        if (kernelFile.isFile()) {
+            task.inputs.file(kernelFile).withPropertyName("tvArm32Kernel")
+        }
+        task.doLast {
+            def target = new File(task.outputDir.get().asFile, "lib/armeabi-v7a/libmpv.so")
+            if (!target.isFile() || allowUpstreamKernel) return
+            if (!kernelFile.isFile()) {
+                throw new GradleException("ARM32 TV kernel missing. Run tool/tv/native/build_kernel.py or set KAZUMI_TV_ARM32_LIBMPV to the verified release library. See tool/tv/native/README.md.")
+            }
+            def spec = new groovy.json.JsonSlurper().parse(kernelSpecFile)
+            def expected = spec.reviewedLibraries["armeabi-v7a"]?.sha256
+            def bytes = kernelFile.bytes
+            def hash = java.security.MessageDigest.getInstance("SHA-256").digest(bytes).encodeHex().toString()
+            if (!expected || hash != expected || bytes.length < 20 ||
+                    bytes[0] != 127 || bytes[1] != 69 || bytes[2] != 76 || bytes[3] != 70 ||
+                    bytes[4] != 1 || bytes[5] != 1 || bytes[18] != 40 || bytes[19] != 0) {
+                throw new GradleException("ARM32 TV kernel hash/ELF architecture differs from the reviewed native manifest")
+            }
+            java.nio.file.Files.copy(kernelFile.toPath(), target.toPath(),
+                    java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+        }
+    }
+}

@@ -11,6 +11,7 @@ This is a downstream presentation branch of Predidit/Kazumi. The user chose a ci
 - App name is **KazumiTV**. Keep the upstream semantic/build version. Track TV changes separately with `KAZUMI_TV_REVISION`.
 - Android packaging is an opt-in overlay. Use `tool/tv/build.sh`; unflavored upstream builds must continue working.
 - Do not reformat untouched upstream files or generated MobX code.
+- The user-requested ARM32 TLS performance fix rebuilds the pinned Android v1.3.1 kernel with mbedTLS -O2. Keep its source/NDK/patch and reviewed ELF SHA in `tool/tv/native/`; only `android/tv.gradle` replaces the verified ARM32 library before strip/signing. Do not restore the temporary media relay or change request/TLS verification/codec contracts to mask this issue. Other ABIs and unflavored builds stay upstream.
 
 ## Input and TV UX
 

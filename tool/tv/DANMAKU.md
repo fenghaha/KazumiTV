@@ -65,3 +65,8 @@ Mac 与飞牛链路已实测搜索→分集详情→非空 comments；芙莉莲 
 数量随上游变动，不能当成固定断言。
 尚待海信与极米实际安装、设置、显示与时间轴验证，不能由返回 JSON 宣称完成。
 部署入口、镜像、源码、备份与回滚以 KnowledgeHub KazumiTV 弹幕专题为准。
+
+
+### 2026-10-24 r5.4 ARM32 内核构建前置
+
+自建弹幕地址与隔离鉴权保持；新的 ARM32 TV 包另需 `tool/tv/native/kernel.json` 固定 SHA 的 TLS 优化内核。参考 [native/README.md](native/README.md)，放到 `build/native/armeabi-v7a/libmpv.so` 或设置 `KAZUMI_TV_ARM32_LIBMPV`。仍使用本页的低资源 Gradle 环境，先完成原生构建再运行 Flutter 测试/APK，禁止并行叠加。临时飞牛媒体中继已撤除，正式构建不带媒体中继定义。

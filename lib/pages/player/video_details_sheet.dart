@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kazumi/tv/player/tv_playback_diagnostics.dart';
 import 'package:kazumi/tv/tv_mode.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
@@ -143,6 +144,10 @@ class _VideoDetailsSheetState extends State<_VideoDetailsSheet>
               ]),
             ]),
           ),
+          if (TvMode.enabled) ...[
+            const SizedBox(height: 16),
+            TvPlaybackDiagnostics(player: () => playerController.playback.mediaPlayer),
+          ],
           const SizedBox(height: 24),
           ContentSection.group(title: '媒体', children: [
             _statusField(context, '媒体地址', playerController.videoUrl,

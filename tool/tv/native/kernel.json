@@ -1,0 +1,13 @@
+{
+  "repository": "https://github.com/Predidit/libmpv-android-video-build.git",
+  "commit": "0443048272a511d7a990a2a3d5ca6bbaf55a869a",
+  "tag": "v1.3.1",
+  "ndk": "28.2.13676358",
+  "patch": "mbedtls-o2.patch",
+  "reviewedLibraries": {
+    "armeabi-v7a": {
+      "sha256": "3b1b5218c3d1763ebd4b06b7adcdfdc82dbc6658343539eb0baff5824e75ab88",
+      "bytes": 18772116
+    }
+  }
+}
