@@ -10,6 +10,8 @@ import 'package:kazumi/tv/player/tv_player_controls.dart';
 void main() {
   late FocusNode playbackFocus;
   late GlobalKey<NavigatorState> navigator;
+  late int sourceOpens;
+  late int detailsOpens;
   late int toggles;
   late int episodeOpens;
   late List<Duration> seeks;
@@ -18,6 +20,8 @@ void main() {
     playbackFocus = FocusNode();
     navigator = GlobalKey<NavigatorState>();
     toggles = 0;
+    sourceOpens = 0;
+    detailsOpens = 0;
     episodeOpens = 0;
     seeks = [];
   });
@@ -58,8 +62,12 @@ void main() {
                   },
                   onNext: () {},
                   onToggleDanmaku: () {},
-                  onDanmakuSources: () async {},
-                  onDetails: () async {},
+                  onDanmakuSources: () async {
+                    sourceOpens++;
+                  },
+                  onDetails: () async {
+                    detailsOpens++;
+                  },
                   onBack: () => navigator.currentState!.maybePop(),
                 ),
               ],
@@ -118,6 +126,39 @@ void main() {
     expect(toggles, 1);
     expect(find.text('暂停'), findsOneWidget);
   });
+
+  for (final size in [const Size(960, 540), const Size(1280, 720)]) {
+    testWidgets(
+      'all six player actions are reachable and both final buttons activate at $size',
+      (tester) async {
+        await mount(tester, size: size);
+        for (var i = 0; i < 4; i++) {
+          await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+          await tester.pumpAndSettle();
+        }
+        expect(
+          FocusManager.instance.primaryFocus?.debugLabel,
+          'TV player action 4',
+        );
+        await tester.sendKeyEvent(LogicalKeyboardKey.select);
+        await tester.pumpAndSettle();
+        expect(sourceOpens, 1);
+        for (var i = 0; i < 5; i++) {
+          await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+          await tester.pumpAndSettle();
+        }
+        expect(
+          FocusManager.instance.primaryFocus?.debugLabel,
+          'TV player action 5',
+        );
+        await tester.sendKeyEvent(LogicalKeyboardKey.select);
+        await tester.pumpAndSettle();
+        expect(detailsOpens, 1);
+        expect(toggles, 0);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
 
   testWidgets('down opens episodes from playback and does not seek', (
     tester,

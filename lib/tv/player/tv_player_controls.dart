@@ -52,6 +52,11 @@ class TvPlayerControls extends StatefulWidget {
 
 class _TvPlayerControlsState extends State<TvPlayerControls> {
   final _playFocus = FocusNode(debugLabel: 'TV playback toggle');
+  final _actionFocus = List.generate(
+    5,
+    (index) => FocusNode(debugLabel: 'TV player action ${index + 1}'),
+  );
+  List<FocusNode> get _actionNodes => [_playFocus, ..._actionFocus];
   final _seekControl = GlobalKey<TvSliderTileState>();
   Timer? _initialTimer;
   Timer? _seekHintTimer;
@@ -218,7 +223,30 @@ class _TvPlayerControlsState extends State<TvPlayerControls> {
       if (!repeat) _showControls();
       return KeyEventResult.handled;
     }
-    // Visible buttons and sliders retain Flutter's normal directional traversal.
+    // Keep the six action buttons reachable even when Wrap changes rows or the
+    // surrounding player contributes other spatial focus candidates.
+    if (_visible &&
+        (key == LogicalKeyboardKey.arrowLeft ||
+            key == LogicalKeyboardKey.arrowRight)) {
+      final nodes = _actionNodes;
+      final index = nodes.indexOf(FocusManager.instance.primaryFocus!);
+      if (index >= 0) {
+        final step = key == LogicalKeyboardKey.arrowRight ? 1 : -1;
+        for (
+          var next = index + step;
+          next >= 0 && next < nodes.length;
+          next += step
+        ) {
+          if (nodes[next].context?.mounted == true &&
+              nodes[next].canRequestFocus) {
+            nodes[next].requestFocus();
+            break;
+          }
+        }
+        return KeyEventResult.handled;
+      }
+    }
+    // Other controls retain normal vertical traversal and slider editing.
     if (_visible) return KeyEventResult.ignored;
     if (key == LogicalKeyboardKey.arrowLeft ||
         key == LogicalKeyboardKey.mediaRewind) {
@@ -260,6 +288,9 @@ class _TvPlayerControlsState extends State<TvPlayerControls> {
     _initialTimer?.cancel();
     _seekHintTimer?.cancel();
     _playFocus.dispose();
+    for (final node in _actionFocus) {
+      node.dispose();
+    }
     super.dispose();
   }
 
@@ -421,27 +452,32 @@ class _TvPlayerControlsState extends State<TvPlayerControls> {
                             '选集 / 线路',
                             Icons.grid_view_rounded,
                             () => unawaited(_openEpisodes()),
+                            focusNode: _actionFocus[0],
                           ),
                           _button(
                             '下一集',
                             Icons.skip_next_rounded,
                             widget.busy ? null : widget.onNext,
+                            focusNode: _actionFocus[1],
                           ),
                           _button(
                             widget.danmakuEnabled ? '弹幕开' : '弹幕关',
                             Icons.subtitles_outlined,
                             widget.onToggleDanmaku,
+                            focusNode: _actionFocus[2],
                           ),
                           _button(
                             '弹幕匹配',
                             Icons.manage_search_rounded,
                             () =>
                                 unawaited(_openPanel(widget.onDanmakuSources)),
+                            focusNode: _actionFocus[3],
                           ),
                           _button(
                             '播放信息',
                             Icons.info_outline_rounded,
                             () => unawaited(_openPanel(widget.onDetails)),
+                            focusNode: _actionFocus[4],
                           ),
                         ],
                       ),
