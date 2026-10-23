@@ -13,6 +13,8 @@
 
 ## r5.4 ARM32 直连 HTTPS 性能修复
 
+“播放信息”新增实际硬解、读取速度、缓存、声画差，以及 Flutter 帧率与 UI/绘制 p95，分别定位视频供数和弹幕滚动；弹幕滚动问题仍在实机排查，不以视频流畅代替弹幕验收。
+
 ARM32 播放内核的 mbedTLS 构建遗漏 `-O2`，在极米上限制了 HTTPS 读取吞吐。r5.4 使用相同内核源码和解码功能恢复 TLS 优化，不通过飞牛中继；详见 [内核构建与验证](tool/tv/native/README.md)。32 位 TV 包需先构建/取回 `kernel.json` 固定 SHA 的内核，放在 `build/native/armeabi-v7a/libmpv.so`，或设置 `KAZUMI_TV_ARM32_LIBMPV`。Gradle 会在签名前验证并替换，ARM64 和非 TV 构建仍沿用原版。
 
 ## r5.3 固定远程输入
