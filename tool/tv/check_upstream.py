@@ -7,7 +7,7 @@ import subprocess
 import sys
 
 root = pathlib.Path(__file__).resolve().parents[2]
-base = json.loads((root / "tool/tv/upstream.json").read_text())
+base = json.loads((root / "tool/tv/upstream.json").read_text(encoding="utf-8"))
 protected = [
     "lib/plugins", "lib/services/plugin", "lib/services/video_source",
     "lib/modules", "lib/repositories", "lib/request", "lib/webview",
@@ -16,12 +16,12 @@ protected = [
 ]
 diff = subprocess.check_output(
     ["git", "diff", "--name-only", base["commit"], "--", *protected],
-    cwd=root, text=True,
+    cwd=root, encoding="utf-8",
 ).splitlines()
 version = re.search(r"^version:\s*(\S+)",
-                    (root / "pubspec.yaml").read_text(), re.M).group(1)
+                    (root / "pubspec.yaml").read_text(encoding="utf-8"), re.M).group(1)
 api = int(re.search(r"apiLevel\s*=\s*(\d+)",
-                   (root / "lib/request/config/api_endpoints.dart").read_text()).group(1))
+                   (root / "lib/request/config/api_endpoints.dart").read_text(encoding="utf-8")).group(1))
 errors = []
 if diff:
     errors.append("Upstream rule/data/playback contract changed: " + ", ".join(diff))
