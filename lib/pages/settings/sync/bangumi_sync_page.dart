@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kazumi/tv/input/tv_adaptive_fields.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:kazumi/bean/settings/settings_detail_scaffold.dart';
@@ -314,7 +315,7 @@ class _BangumiSyncPageState extends State<BangumiSyncPage> {
                   : '使用 Access Token 授权'),
           children: [
             const SizedBox(height: 12),
-            TextField(
+            TvAdaptiveTextField(
               controller: _tokenController,
               enabled: !_busy,
               obscureText: !_passwordVisible,

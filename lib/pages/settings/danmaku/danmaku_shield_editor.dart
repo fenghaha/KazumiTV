@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kazumi/tv/input/tv_adaptive_fields.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 
 import 'package:kazumi/bean/widget/content_section.dart';
@@ -47,7 +48,7 @@ class _DanmakuShieldEditorState extends State<DanmakuShieldEditor> {
           title: '添加规则',
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            TextField(
+            TvAdaptiveTextField(
               controller: textEditingController,
               decoration: InputDecoration(
                 hintText: '关键词或 /正则表达式/',

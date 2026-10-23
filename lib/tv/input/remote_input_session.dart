@@ -2,8 +2,10 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
+import 'package:flutter/services.dart';
 
 import 'package:kazumi/tv/input/tv_input_limits.dart';
+import 'package:kazumi/tv/input/tv_lan_address.dart';
 
 /// One short-lived phone editor. No server, address or failed startup survives
 /// its dialog. The capability is random, never persisted and revoked on close.
@@ -77,30 +79,38 @@ class RemoteInputSession {
   }
 
   static Future<InternetAddress?> _lanAddress() async {
+    if (Platform.isAndroid) {
+      try {
+        final networks = await const MethodChannel(
+          'kazumi/tv',
+        ).invokeListMethod<dynamic>('getLanAddresses');
+        final selected = TvLanAddress.select([
+          for (final value in networks ?? [])
+            if (value is Map &&
+                value['address'] is String &&
+                value['interface'] is String)
+              TvLanAddress(
+                value['address'] as String,
+                value['interface'] as String,
+                active: value['active'] == true,
+              ),
+        ]);
+        if (selected != null) return selected;
+      } on PlatformException {
+        // Older firmware may not expose link properties; use physical NICs.
+      } on MissingPluginException {
+        // Desktop tests and older platform shells use the portable fallback.
+      }
+    }
     final interfaces = await NetworkInterface.list(
       type: InternetAddressType.IPv4,
       includeLoopback: false,
     );
-    final physical = <InternetAddress>[];
-    final other = <InternetAddress>[];
-    for (final interface in interfaces) {
-      final virtual = RegExp(
-        r'^(utun|tun|tap|wg|docker|br-|veth|tailscale)',
-      ).hasMatch(interface.name.toLowerCase());
-      for (final address in interface.addresses) {
-        final parts = address.rawAddress;
-        final private =
-            parts[0] == 10 ||
-            (parts[0] == 192 && parts[1] == 168) ||
-            (parts[0] == 172 && parts[1] >= 16 && parts[1] <= 31);
-        if (private) (virtual ? other : physical).add(address);
-      }
-    }
-    return physical.isNotEmpty
-        ? physical.first
-        : other.isNotEmpty
-        ? other.first
-        : null;
+    return TvLanAddress.select([
+      for (final interface in interfaces)
+        for (final address in interface.addresses)
+          TvLanAddress(address.address, interface.name),
+    ]);
   }
 
   Future<void> _respond(

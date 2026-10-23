@@ -19,7 +19,16 @@ abstract final class TvTheme {
           onSurface: ink,
           onSurfaceVariant: muted,
           surfaceContainer: surface,
+          surfaceContainerLowest: background,
+          surfaceContainerLow: surface,
           surfaceContainerHigh: const Color(0xFF263A52),
+          surfaceContainerHighest: const Color(0xFF31455D),
+          secondaryContainer: const Color(0xFF263A52),
+          onSecondaryContainer: ink,
+          primaryContainer: const Color(0xFF31455D),
+          onPrimaryContainer: ink,
+          tertiaryContainer: const Color(0xFF263A52),
+          onTertiaryContainer: ink,
         );
     final base = ThemeData(
       useMaterial3: true,
@@ -43,6 +52,8 @@ abstract final class TvTheme {
         titleMedium: base.textTheme.titleMedium?.copyWith(fontSize: 22),
         bodyLarge: base.textTheme.bodyLarge?.copyWith(fontSize: 20),
         bodyMedium: base.textTheme.bodyMedium?.copyWith(fontSize: 18),
+        labelLarge: base.textTheme.labelLarge?.copyWith(fontSize: 18),
+        bodySmall: base.textTheme.bodySmall?.copyWith(fontSize: 16),
       ),
       appBarTheme: const AppBarTheme(
         backgroundColor: background,

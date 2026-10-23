@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:kazumi/bean/appbar/sys_app_bar.dart';
+import 'package:kazumi/tv/tv_mode.dart';
+import 'package:kazumi/tv/widgets/tv_scroll_boundary.dart';
 
 class SettingsPaneScope extends InheritedWidget {
   const SettingsPaneScope({
@@ -70,7 +72,7 @@ class SettingsDetailScaffold extends StatelessWidget {
         actions: actions,
       );
     } else {
-      appBar = SysAppBar(
+      appBar = TvMode.enabled ? AppBar(title: title, actions: actions, leading: leading) : SysAppBar(
         title: title,
         actions: actions,
         leading:
@@ -81,8 +83,9 @@ class SettingsDetailScaffold extends StatelessWidget {
 
     // Keep routed panes opaque during transitions.
     return Scaffold(
+      resizeToAvoidBottomInset: !TvMode.enabled,
       appBar: appBar,
-      body: body,
+      body: TvMode.enabled ? TvScrollBoundary(child: body) : body,
       floatingActionButton: floatingActionButton,
       bottomNavigationBar: bottomNavigationBar,
     );

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:kazumi/tv/tv_mode.dart';
+import 'package:kazumi/tv/settings/tv_slider_tile.dart';
 
 import 'package:kazumi/bean/widget/content_section.dart';
 import 'package:kazumi/bean/widget/split_list_row.dart';
@@ -18,6 +20,14 @@ class SettingsList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (TvMode.enabled) {
+      // Eager targets let the remote revisit sections outside the viewport.
+      return SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Column(children: [for (final section in sections)
+          Center(child: ConstrainedBox(constraints: BoxConstraints(maxWidth: maxWidth), child: section))]),
+      );
+    }
     return ListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 12),
       itemCount: sections.length,
@@ -245,6 +255,10 @@ class SettingsSliderTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (TvMode.enabled) {
+      return TvSliderTile(title: title, value: value, valueLabel: valueLabel,
+          min: min, max: max, divisions: divisions, onChanged: onChanged, leading: leading, description: description);
+    }
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 

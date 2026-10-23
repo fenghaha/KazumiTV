@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:kazumi/tv/widgets/tv_scroll_boundary.dart';
 
 /// A single focus target for a TV control. Kept outside the upstream widgets so
 /// the desktop/mobile focus and shortcut behavior does not change.
@@ -45,6 +46,7 @@ class _TvFocusableState extends State<TvFocusable> {
     if (!focused) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !_focused) return;
+      if (TvScrollBoundary.reveal(context)) return;
       Scrollable.ensureVisible(
         context,
         alignment: 0.5,

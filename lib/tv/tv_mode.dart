@@ -29,6 +29,17 @@ class TvMode {
         DeviceOrientation.landscapeRight,
       ]);
       await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+      // The native activity reapplies its stored system-bar state when an IME
+      // dialog returns window focus. Keep that state consistent with TV mode.
+      try {
+        await const MethodChannel(
+          'com.predidit.kazumi/intent',
+        ).invokeMethod<void>('setSystemBarsHidden', true);
+      } on PlatformException {
+        // SystemChrome remains the fallback for older native shells.
+      } on MissingPluginException {
+        // No native activity in widget tests.
+      }
     }
   }
 }

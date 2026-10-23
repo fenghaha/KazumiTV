@@ -8,6 +8,9 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.graphics.Color
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import java.net.Inet4Address
 import android.os.Bundle
 import android.text.InputFilter
 import android.text.InputType
@@ -47,11 +50,39 @@ class TvPlatformHandler private constructor(
                             activity.packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
                     )
                 }
+                "getLanAddresses" -> try {
+                    result.success(lanAddresses())
+                } catch (_: SecurityException) {
+                    result.error("NETWORK_UNAVAILABLE", "Network information unavailable", null)
+                }
                 "editText" -> openEditor(call, result)
                 else -> result.notImplemented()
             }
         }
         activity.application.registerActivityLifecycleCallbacks(this)
+    }
+
+    private fun lanAddresses(): List<Map<String, Any>> {
+        val manager = activity.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val active = manager.activeNetwork
+        val networks = (listOfNotNull(active) + manager.allNetworks.toList()).distinct()
+        return networks.flatMap { network ->
+            val capabilities = manager.getNetworkCapabilities(network)
+            val physical = capabilities != null &&
+                !capabilities.hasTransport(NetworkCapabilities.TRANSPORT_VPN) &&
+                (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+                    capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET))
+            val link = manager.getLinkProperties(network)
+            if (!physical || link == null) emptyList() else
+                link.linkAddresses.mapNotNull { address ->
+                    val ip = address.address
+                    if (ip is Inet4Address && ip.isSiteLocalAddress)
+                        mapOf("address" to (ip.hostAddress ?: ""),
+                            "interface" to (link.interfaceName ?: ""),
+                            "active" to (network == active))
+                    else null
+                }
+        }
     }
 
     private fun openEditor(call: MethodCall, result: MethodChannel.Result) {

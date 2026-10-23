@@ -6,6 +6,8 @@ import 'package:kazumi/bean/widget/state_presentation.dart';
 import 'package:kazumi/pages/settings/sync/sync_settings_widgets.dart';
 import 'package:kazumi/services/storage/storage.dart';
 import 'package:kazumi/services/sync/bangumi_sync_service.dart';
+import 'package:kazumi/tv/tv_mode.dart';
+import 'package:kazumi/tv/widgets/tv_focusable.dart';
 
 enum _SyncStatus {
   unconnected('未连接', Icons.link_off_rounded),
@@ -156,7 +158,7 @@ class _SyncServiceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Container(
+    final card = Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -210,6 +212,12 @@ class _SyncServiceCard extends StatelessWidget {
         ],
       ),
     );
+    if (TvMode.enabled) {
+      return TvFocusable(onPressed: onPressed, padding: EdgeInsets.zero,
+          borderRadius: BorderRadius.circular(28),
+          child: ExcludeFocus(child: card));
+    }
+    return card;
   }
 }
 

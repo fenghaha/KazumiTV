@@ -7,6 +7,8 @@ import 'package:kazumi/bean/settings/settings_list.dart';
 import 'package:kazumi/bean/widget/content_section.dart';
 import 'package:kazumi/pages/settings/player_settings.dart';
 import 'package:kazumi/utils/constants.dart';
+import 'package:kazumi/tv/tv_mode.dart';
+import 'package:kazumi/tv/settings/tv_settings_navigation.dart';
 
 class _SettingsCategory {
   const _SettingsCategory({
@@ -164,6 +166,14 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
+  TvSettingsNavigationController? _tvController;
+  bool _tvInitialFocus = false;
+  TvSettingsNavigationController get _tv => _tvController ??= TvSettingsNavigationController();
+  Widget _tvMenu(Widget child) => TvMode.enabled ? _tv.menu(child) : child;
+  Widget _tvPane(Widget child) => TvMode.enabled ? _tv.pane(child) : child;
+
+  @override
+  void dispose() { _tvController?.dispose(); super.dispose(); }
   final _outletKey = GlobalKey<RouterOutletState>();
   Object? _categoryNavigation;
   late String _location = _normalizePath(widget.location);
@@ -187,11 +197,17 @@ class _SettingsPageState extends State<SettingsPage> {
     if (!outlet.canPop &&
         !_isSecondaryRoute &&
         _selectedCategoryPath == path) {
+      if (TvMode.enabled) _tv.enterDetails();
       return;
     }
     _categoryNavigation = null;
     outlet.navigate(path);
     setState(() => _location = path);
+    if (TvMode.enabled) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _tv.enterDetails();
+      });
+    }
   }
 
   Future<void> _pushCategory(String path) async {
@@ -210,7 +226,9 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   void _goBack() {
+    if (TvMode.enabled && _tv.finishEditing()) return;
     if (_outletKey.currentState?.maybePop() ?? false) return;
+    if (TvMode.enabled && _tv.focusMenu()) return;
     _exitSettings();
   }
 
@@ -221,12 +239,18 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(builder: (context, constraints) {
-      final wide = constraints.maxWidth > LayoutBreakpoint.compact['width']!;
-      return NavigatorPopHandler<Object?>(
-        onPopWithResult: (_) => _goBack(),
-        child: Scaffold(
+      final wide = TvMode.enabled || constraints.maxWidth > LayoutBreakpoint.compact['width']!;
+      if (TvMode.enabled) {
+        _tv.selectedPath = _selectedCategoryPath;
+        if (!_tvInitialFocus) {
+          _tvInitialFocus = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) _tv.enterDetails(); });
+        }
+      }
+      final scaffold = Scaffold(
+          resizeToAvoidBottomInset: !TvMode.enabled,
           appBar: wide
-              ? SysAppBar(
+              ? TvMode.enabled ? AppBar(title: const Text('设置'), leading: BackButton(onPressed: _goBack)) : SysAppBar(
                   title: const Text('设置'),
                   leading: BackButton(onPressed: _exitSettings),
                 )
@@ -238,18 +262,19 @@ class _SettingsPageState extends State<SettingsPage> {
               children: [
                 // Keep the outlet at the same tree position on resize.
                 SizedBox(
-                  width: wide ? 280 : 0,
+                  width: wide ? (TvMode.enabled ? 220 : 280) : 0,
                   child: Offstage(
                     offstage: !wide,
-                    child: _SettingsMenu(
+                    child: _tvMenu(_SettingsMenu(
                       wide: true,
                       selectedPath: _selectedCategoryPath,
                       onSelect: _replaceCategory,
-                    ),
+                      focusNodeForPath: TvMode.enabled ? _tv.menuNode : null,
+                    )),
                   ),
                 ),
                 Expanded(
-                  child: SettingsPaneScope(
+                  child: _tvPane(SettingsPaneScope(
                     embedded: wide,
                     showBackButton: _isSecondaryRoute,
                     onBack: _goBack,
@@ -265,13 +290,16 @@ class _SettingsPageState extends State<SettingsPage> {
                         child: RouterOutlet(key: _outletKey),
                       ),
                     ),
-                  ),
+                  )),
                 ),
               ],
             ),
           ),
-        ),
-      );
+        );
+      return TvMode.enabled
+          ? TvSettingsNavigation(controller: _tv, innerCanPop: () => _outletKey.currentState?.canPop ?? false,
+              onBack: _goBack, child: scaffold)
+          : NavigatorPopHandler<Object?>(onPopWithResult: (_) => _goBack(), child: scaffold);
     });
   }
 }
@@ -304,11 +332,13 @@ class _SettingsMenu extends StatelessWidget {
     required this.wide,
     this.selectedPath,
     required this.onSelect,
+    this.focusNodeForPath,
   });
 
   final bool wide;
   final String? selectedPath;
   final ValueChanged<String> onSelect;
+  final FocusNode Function(String)? focusNodeForPath;
 
   @override
   Widget build(BuildContext context) {
@@ -327,6 +357,7 @@ class _SettingsMenu extends StatelessWidget {
               ),
               for (final category in group.categories)
                 _RailDestination(
+                  focusNode: focusNodeForPath?.call(category.path),
                   category: category,
                   selected: selectedPath == category.path,
                   onTap: () => onSelect(category.path),
@@ -358,11 +389,13 @@ class _RailDestination extends StatelessWidget {
     required this.category,
     required this.selected,
     required this.onTap,
+    this.focusNode,
   });
 
   final _SettingsCategory category;
   final bool selected;
   final VoidCallback onTap;
+  final FocusNode? focusNode;
 
   @override
   Widget build(BuildContext context) {
@@ -378,6 +411,7 @@ class _RailDestination extends StatelessWidget {
         borderRadius: BorderRadius.circular(28),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
+          focusNode: focusNode,
           onTap: onTap,
           child: SizedBox(
             height: 56,

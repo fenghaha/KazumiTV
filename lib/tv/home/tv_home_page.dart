@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:kazumi/bean/card/network_img_layer.dart';
 import 'package:kazumi/modules/bangumi/bangumi_item.dart';
@@ -13,6 +14,7 @@ import 'package:kazumi/tv/home/tv_home_data.dart';
 import 'package:kazumi/tv/input/tv_text_input.dart';
 import 'package:kazumi/tv/widgets/tv_focusable.dart';
 import 'package:kazumi/tv/widgets/tv_poster.dart';
+import 'package:kazumi/tv/widgets/tv_scroll_boundary.dart';
 
 enum _Destination { discover, search, calendar, library, history }
 
@@ -44,6 +46,7 @@ class TvHomePage extends StatefulWidget {
 class _TvHomePageState extends State<TvHomePage> {
   late final TvHomeData _data = widget.data ?? UpstreamTvHomeData();
   final _searchInput = TextEditingController();
+  final _contentFocus = GlobalKey<TvScrollBoundaryState>();
   final _navFocus = List.generate(6, (i) => FocusNode(debugLabel: 'tv-nav-$i'));
   _Destination _destination = _Destination.discover;
   late final int _initialNavIndex;
@@ -215,6 +218,7 @@ class _TvHomePageState extends State<TvHomePage> {
         }
       },
       child: Scaffold(
+        resizeToAvoidBottomInset: false,
         backgroundColor: const Color(0xFF101C2C),
         body: SafeArea(
           child: LayoutBuilder(
@@ -233,13 +237,28 @@ class _TvHomePageState extends State<TvHomePage> {
                     policy: ReadingOrderTraversalPolicy(),
                     child: Row(
                       children: [
-                        _navigation(compact),
+                        Focus(
+                          canRequestFocus: false,
+                          skipTraversal: true,
+                          onKeyEvent: (_, event) {
+                            if (event is KeyDownEvent &&
+                                event.logicalKey ==
+                                    LogicalKeyboardKey.arrowRight) {
+                              _contentFocus.currentState?.focusContent();
+                              return KeyEventResult.handled;
+                            }
+                            return KeyEventResult.ignored;
+                          },
+                          child: _navigation(compact),
+                        ),
                         Expanded(
                           child: Column(
                             children: [
                               Expanded(
-                                child: FocusTraversalGroup(
-                                  policy: ReadingOrderTraversalPolicy(),
+                                child: TvScrollBoundary(
+                                  key: _contentFocus,
+                                  onLeft: () => _navFocus[_destination.index]
+                                      .requestFocus(),
                                   child: _body(),
                                 ),
                               ),

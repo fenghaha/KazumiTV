@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kazumi/tv/tv_theme.dart';
+import 'package:kazumi/tv/widgets/tv_scroll_boundary.dart';
 
 class TvPageScaffold extends StatelessWidget {
   const TvPageScaffold({
@@ -17,6 +18,7 @@ class TvPageScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
+    resizeToAvoidBottomInset: false,
     backgroundColor: TvTheme.background,
     appBar: AppBar(title: Text(title), actions: actions),
     body: SafeArea(
@@ -30,7 +32,7 @@ class TvPageScaffold extends StatelessWidget {
               Text(subtitle!, style: const TextStyle(color: TvTheme.muted)),
               const SizedBox(height: 20),
             ],
-            Expanded(child: child),
+            Expanded(child: TvScrollBoundary(child: child)),
           ],
         ),
       ),

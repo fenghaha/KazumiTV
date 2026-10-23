@@ -18,77 +18,80 @@ class TvSettingsPage extends StatelessWidget {
   Widget build(BuildContext context) => TvPageScaffold(
     title: '设置',
     subtitle: '方向键移动 · 确认键选择 · 返回键回到上一页',
-    child: ListView(
-      children: [
-        const Padding(
-          padding: EdgeInsets.only(bottom: 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'KazumiTV',
-                style: TextStyle(fontSize: 32, color: TvTheme.ink),
-              ),
-              SizedBox(height: 6),
-              Text(
-                '上游基础 ${ApiEndpoints.version}  ·  规则 API ${ApiEndpoints.apiLevel}\n'
-                '电视适配修订 $revision',
-                style: TextStyle(color: TvTheme.muted, height: 1.5),
-              ),
-            ],
+    child: SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(bottom: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'KazumiTV',
+                  style: TextStyle(fontSize: 32, color: TvTheme.ink),
+                ),
+                SizedBox(height: 6),
+                Text(
+                  '上游基础 ${ApiEndpoints.version}  ·  规则 API ${ApiEndpoints.apiLevel}\n'
+                  '电视适配修订 $revision',
+                  style: TextStyle(color: TvTheme.muted, height: 1.5),
+                ),
+              ],
+            ),
           ),
-        ),
-        _category(
-          context,
-          Icons.extension_outlined,
-          '规则与播放源',
-          '选择、导入与更新规则；首次安装不预装播放源',
-          '/tv/rules',
-          autofocus: true,
-        ),
-        _category(
-          context,
-          Icons.play_circle_outline,
-          '播放',
-          '解码、渲染与播放行为',
-          '/settings/player',
-        ),
-        _category(
-          context,
-          Icons.subtitles_outlined,
-          '弹幕',
-          '弹幕来源、屏蔽与显示效果',
-          '/settings/danmaku',
-        ),
-        _category(
-          context,
-          Icons.cloud_outlined,
-          '同步',
-          'Bangumi 与 WebDAV，多设备追番记录',
-          '/settings/sync',
-        ),
-        _category(
-          context,
-          Icons.language_outlined,
-          '网络',
-          '访问加速与代理',
-          '/settings/proxy',
-        ),
-        _category(
-          context,
-          Icons.tune_rounded,
-          '高级设置',
-          '打开上游完整设置界面',
-          '/settings',
-        ),
-        const Padding(
-          padding: EdgeInsets.symmetric(vertical: 12),
-          child: Text(
-            '电视版安装包由本项目单独发布；规则仍沿用上游版本与兼容性检查。',
-            style: TextStyle(color: TvTheme.muted),
+          _category(
+            context,
+            Icons.extension_outlined,
+            '规则与播放源',
+            '选择、导入与更新规则；首次安装不预装播放源',
+            '/tv/rules',
+            autofocus: true,
           ),
-        ),
-      ],
+          _category(
+            context,
+            Icons.play_circle_outline,
+            '播放',
+            '解码、渲染与播放行为',
+            '/settings/player',
+          ),
+          _category(
+            context,
+            Icons.subtitles_outlined,
+            '弹幕',
+            '弹幕来源、屏蔽与显示效果',
+            '/settings/danmaku',
+          ),
+          _category(
+            context,
+            Icons.cloud_outlined,
+            '同步',
+            'Bangumi 与 WebDAV，多设备追番记录',
+            '/settings/sync',
+          ),
+          _category(
+            context,
+            Icons.language_outlined,
+            '网络',
+            '访问加速与代理',
+            '/settings/proxy',
+          ),
+          _category(
+            context,
+            Icons.tune_rounded,
+            '高级设置',
+            '打开上游完整设置界面',
+            '/settings',
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Text(
+              '电视版安装包由本项目单独发布；规则仍沿用上游版本与兼容性检查。',
+              style: TextStyle(color: TvTheme.muted),
+            ),
+          ),
+        ],
+      ),
     ),
   );
 

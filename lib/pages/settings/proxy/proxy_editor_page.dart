@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kazumi/tv/input/tv_adaptive_fields.dart';
 import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:kazumi/bean/settings/settings_detail_scaffold.dart';
 import 'package:kazumi/services/storage/storage.dart';
@@ -98,7 +99,7 @@ class _ProxyEditorPageState extends State<ProxyEditorPage> {
               key: _formKey,
               child: Column(
                 children: [
-                  TextFormField(
+                  TvAdaptiveTextFormField(
                     controller: urlController,
                     decoration: const InputDecoration(
                       labelText: '代理地址',
@@ -116,7 +117,7 @@ class _ProxyEditorPageState extends State<ProxyEditorPage> {
                     },
                   ),
                   const SizedBox(height: 16),
-                  TextFormField(
+                  TvAdaptiveTextFormField(
                     controller: testUrlController,
                     decoration: const InputDecoration(
                       labelText: '测试地址',

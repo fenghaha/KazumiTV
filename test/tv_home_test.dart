@@ -97,6 +97,49 @@ void main() {
     home: child,
   );
 
+  for (final size in [const Size(960, 540), const Size(1280, 720)]) {
+    testWidgets('Up restores the whole discovery header at ${size.width}', (
+      tester,
+    ) async {
+      await setTvSize(tester, size);
+      await tester.pumpWidget(
+        app(TvHomePage(data: _FixtureData(withHistory: false))),
+      );
+      await tester.pumpAndSettle();
+      final vertical = find
+          .descendant(
+            of: find.byKey(const PageStorageKey('discover')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      final position = tester.state<ScrollableState>(vertical).position;
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.pumpAndSettle();
+      expect(position.pixels, greaterThan(50));
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+      await tester.pumpAndSettle();
+      expect(position.pixels, 0);
+      expect(
+        tester.getTopLeft(find.text('今晚看什么')).dy,
+        greaterThanOrEqualTo(20),
+      );
+      expect(FocusManager.instance.primaryFocus?.debugLabel, isNot('tv-nav-0'));
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+      await tester.pumpAndSettle();
+      expect(position.pixels, 0);
+      expect(FocusManager.instance.primaryFocus?.debugLabel, isNot('tv-nav-0'));
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+      await tester.pumpAndSettle();
+      expect(FocusManager.instance.primaryFocus?.debugLabel, 'tv-nav-0');
+    });
+  }
+
   testWidgets('remote moves from navigation to feature and opens the subject', (
     tester,
   ) async {

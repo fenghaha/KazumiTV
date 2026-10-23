@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kazumi/tv/input/tv_adaptive_fields.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
 import 'package:kazumi/bean/settings/settings_detail_scaffold.dart';
@@ -92,7 +93,7 @@ class _WebDavServerPageState extends State<WebDavServerPage> {
                   child: Column(
                     spacing: 20,
                     children: [
-                      TextFormField(
+                      TvAdaptiveTextFormField(
                         controller: _url,
                         enabled: !_busy,
                         keyboardType: TextInputType.url,
@@ -114,7 +115,7 @@ class _WebDavServerPageState extends State<WebDavServerPage> {
                           return null;
                         },
                       ),
-                      TextFormField(
+                      TvAdaptiveTextFormField(
                         controller: _username,
                         enabled: !_busy,
                         textInputAction: TextInputAction.next,
@@ -124,7 +125,7 @@ class _WebDavServerPageState extends State<WebDavServerPage> {
                           border: OutlineInputBorder(),
                         ),
                       ),
-                      TextFormField(
+                      TvAdaptiveTextFormField(
                         controller: _password,
                         enabled: !_busy,
                         obscureText: !_passwordVisible,
