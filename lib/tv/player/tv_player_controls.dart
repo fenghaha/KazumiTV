@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:kazumi/tv/player/tv_frame_monitor.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kazumi/tv/widgets/tv_focusable.dart';
@@ -80,6 +82,7 @@ class _TvPlayerControlsState extends State<TvPlayerControls> {
   @override
   void initState() {
     super.initState();
+    TvFrameMonitor.shared.start();
     FocusManager.instance.addEarlyKeyEventHandler(_handleRemote);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -283,6 +286,7 @@ class _TvPlayerControlsState extends State<TvPlayerControls> {
   @override
   void dispose() {
     _disposing = true;
+    TvFrameMonitor.shared.stop();
     _back?.unregisterOverlay(this);
     FocusManager.instance.removeEarlyKeyEventHandler(_handleRemote);
     _initialTimer?.cancel();

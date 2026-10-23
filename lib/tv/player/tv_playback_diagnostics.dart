@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:kazumi/tv/player/tv_frame_monitor.dart';
 import 'package:media_kit/media_kit.dart';
 
 /// Reads only non-sensitive playback counters while the information sheet is open.
@@ -51,7 +52,11 @@ class _TvPlaybackDiagnosticsState extends State<TvPlaybackDiagnostics> {
         );
       }
       if (!mounted || !identical(widget.player(), player)) return;
-      setState(() => _status = formatTvPlaybackDiagnostics(values));
+      setState(
+        () => _status =
+            '${formatTvPlaybackDiagnostics(values)}\n'
+            '${TvFrameMonitor.shared.summary(View.of(context).display.refreshRate)}',
+      );
     } catch (_) {
       // A disposed/replaced player or unsupported property has no UI side effect.
     } finally {
