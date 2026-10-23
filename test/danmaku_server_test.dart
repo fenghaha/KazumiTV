@@ -2,6 +2,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kazumi/services/network/danmaku_server.dart';
 
 void main() {
+  test('Bangumi aliases bridge exact naming differences without fuzzy seasons', () {
+    final rows = [
+      {'animeId': 3884, 'animeTitle': '东京食尸鬼(2014)【TV动画】from bahamut'},
+      {'animeId': 5989, 'animeTitle': '东京食尸鬼√A(2015)【TV动画】from bahamut'},
+    ];
+    expect(DanmakuServer.exactAnimeId(rows,
+        ['東京喰種トーキョーグール', '东京喰种', '东京食尸鬼']), 3884);
+  });
   test('compatible server source tags honor existing source switches', () {
     expect(DanmakuServer.sourceLabel('user[bilibili1]'), 'BiliBili');
     expect(DanmakuServer.sourceLabel('user[bahamut]'), 'Gamer');

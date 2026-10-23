@@ -8,7 +8,7 @@
   "presentationRevision": 4,
   "reviewedExtensions": {
     "lib/request/apis/danmaku_api.dart": {
-      "sha256": "436cd78f34173cb47901279b81f8fa6f4915754a39fb73332be37f170ec4d882",
+      "sha256": "5c3eb6919f51531b180a5007c6322402270183f34cebd18ada62a5964f9a0211",
       "reason": "2026-10-24 user-requested optional self-hosted danmaku: endpoint selection, isolated auth and real episode IDs; official flow and rule/version/API contracts retained"
     },
     "lib/request/clients/danmaku_client.dart": {

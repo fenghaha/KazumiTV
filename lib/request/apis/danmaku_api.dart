@@ -26,7 +26,7 @@ class DanmakuApi {
         found.animes.map(
           (a) => {'animeId': a.animeId, 'animeTitle': a.animeTitle},
         ),
-        [subject.name, subject.nameCn],
+        [subject.name, subject.nameCn, ...subject.alias],
       );
     }
     final path = ApiEndpoints.formatUrl(
