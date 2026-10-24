@@ -11,7 +11,13 @@
 - 应用名称 **KazumiTV**，application ID `com.fenghaha.kazumitv`。首次安装为独立应用；不假定能覆盖不同签名的第三方 TV 包，不在安装前删除旧数据。
 - 不内置第三方播放源、媒体账号或弹弹凭据。Emby 桥接是独立工程，通过上游兼容规则接入。
 
-## r5.5 低内存电视预读
+## r5.5.1 设备配置隔离与离线诊断
+
+2026-10-25用户要求本轮调优先限定极米，海信另验。后续构建默认`KAZUMI_TV_DEVICE_PROFILE=generic`，不启用60秒预读限制；只有显式`xgimi-z9x`配置且Android TV/RAM≤2GiB才启用。配置档是明确的构建目标，不按品牌名或内存自动推定设备。这不撤销既有ARM32 TLS编译修复。
+
+极米专用构建使用 `KAZUMI_TV_DEVICE_PROFILE=xgimi-z9x tool/tv/build.sh --target-platform android-arm`，并保留原私有签名/弹幕defines。默认电视修订会带`r5.5.1-xgimi-z9x`；通用构建带`r5.5.1-generic`。不要将极米专用包作为海信调优包分发。离线分析与下次profile耗时标记见 [极米离线准备](tool/tv/XGIMI_OFFLINE.md)。当前实机r5.5未在本轮更换，新准备不代表残余卡顿已改善。
+
+## r5.5 低内存电视预读（已交付阶段历史）
 
 仅在Android TV且系统确认总RAM不超过2GiB时，将初始预读限制为60秒，并在前后台恢复时保持同一限制。减少大量HTTPS解密/磁盘预取与弹幕绘制竞争，保留原缓存字节上限、低内存设置、源/CDN及解码输出。未知RAM、更大内存和非TV沿用原行为；播放信息显示实际预读上限。
 
