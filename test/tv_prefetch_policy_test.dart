@@ -10,10 +10,13 @@ void main() {
         totalMemoryBytes: memory,
       );
 
-  test('only the explicit validated Z9X build receives the 60-second window', () {
-    expect(limit(TvDeviceProfile.xgimiZ9x, 1941639168), 60);
-    expect(limit(TvDeviceProfile.xgimiZ9x, 2 * 1024 * 1024 * 1024), 60);
-  });
+  test(
+    'only the explicit validated Z9X build receives the 60-second window',
+    () {
+      expect(limit(TvDeviceProfile.xgimiZ9x, 1941639168), 60);
+      expect(limit(TvDeviceProfile.xgimiZ9x, 2 * 1024 * 1024 * 1024), 60);
+    },
+  );
 
   test('generic and unvalidated device profiles do not inherit Z9X tuning', () {
     for (final profile in [TvDeviceProfile.generic, 'hisense', '', 'xgimi']) {

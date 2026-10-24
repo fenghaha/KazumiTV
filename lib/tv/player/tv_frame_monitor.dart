@@ -45,6 +45,10 @@ class TvFrameMonitor {
           for (final frame in _frames)
             {
               'vsyncUs': frame.timestampInMicroseconds(FramePhase.vsyncStart),
+              'buildStartUs': frame.timestampInMicroseconds(FramePhase.buildStart),
+              'buildFinishUs': frame.timestampInMicroseconds(FramePhase.buildFinish),
+              'rasterStartUs': frame.timestampInMicroseconds(FramePhase.rasterStart),
+              'rasterFinishUs': frame.timestampInMicroseconds(FramePhase.rasterFinish),
               'buildUs': frame.buildDuration.inMicroseconds,
               'rasterUs': frame.rasterDuration.inMicroseconds,
             },

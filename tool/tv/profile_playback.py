@@ -19,6 +19,21 @@ def percentile(values, fraction):
     return sorted(values)[max(0, math.ceil(len(values) * fraction) - 1)]
 
 
+def admission_summary(durations, timeline_requested):
+    values = durations.get('TV.Danmaku.add', [])
+    if not timeline_requested:
+        return {'status': 'timeline_not_requested'}
+    if not values:
+        return {'status': 'not_observed'}
+    return {
+        'status': 'observed', 'count': len(values),
+        'p50_ms': round(percentile(values, .5), 3),
+        'p95_ms': round(percentile(values, .95), 3),
+        'max_ms': round(max(values), 3),
+        'over_33ms_count': sum(value > 100 / 3 for value in values),
+    }
+
+
 def summarize(frames):
     if len(frames) < 2:
         return {"frames": len(frames), "error": "insufficient_frames"}
@@ -125,6 +140,7 @@ def main():
         [{"name": name, "count": len(values), "total_ms": round(sum(values), 2),
           "p95_ms": round(percentile(values, .95), 2)} for name, values in durations.items()],
         key=lambda row: row["total_ms"], reverse=True)[:20]
+    result['danmaku_admission'] = admission_summary(durations, args.timeline)
     result["cpu_sample_count"] = cpu.get("sampleCount", 0)
     result["cpu_top_exclusive"] = [
         {"name": function.get("function", {}).get("name", "unknown"),
