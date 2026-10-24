@@ -2,14 +2,18 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:kazumi/tv/player/tv_frame_monitor.dart';
 import 'package:media_kit/media_kit.dart';
 
 /// Reads only non-sensitive playback counters while the information sheet is open.
 class TvPlaybackDiagnostics extends StatefulWidget {
-  const TvPlaybackDiagnostics({super.key, required this.player});
+  const TvPlaybackDiagnostics({
+    super.key,
+    required this.player,
+    required this.frameSummary,
+  });
 
   final Player? Function() player;
+  final String frameSummary;
 
   @override
   State<TvPlaybackDiagnostics> createState() => _TvPlaybackDiagnosticsState();
@@ -55,7 +59,7 @@ class _TvPlaybackDiagnosticsState extends State<TvPlaybackDiagnostics> {
       setState(
         () => _status =
             '${formatTvPlaybackDiagnostics(values)}\n'
-            '${TvFrameMonitor.shared.summary(View.of(context).display.refreshRate)}',
+            '打开面板前 ${widget.frameSummary}',
       );
     } catch (_) {
       // A disposed/replaced player or unsupported property has no UI side effect.

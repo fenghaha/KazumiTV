@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kazumi/tv/player/tv_playback_diagnostics.dart';
+import 'package:kazumi/tv/player/tv_frame_monitor.dart';
 import 'package:kazumi/tv/tv_mode.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
@@ -17,13 +18,17 @@ Future<void> showVideoDetailsSheet(
   BuildContext context, {
   required PlayerController playerController,
 }) async {
+  // Freeze the playback window before the modal adds its own animations/paint.
+  final frameSummary = TvMode.enabled
+      ? TvFrameMonitor.shared.summary(View.of(context).display.refreshRate)
+      : '';
   await showAdaptiveBottomSheet<void>(
     context: context,
     useRootNavigator: TvMode.enabled,
     maxHeightFactor: 0.86,
     compactLandscapeMaxHeightFactor: 0.95,
     builder: (context) =>
-        _VideoDetailsSheet(playerController: playerController),
+        _VideoDetailsSheet(playerController: playerController, frameSummary: frameSummary),
   );
 }
 
@@ -62,9 +67,10 @@ class _LogEntry {
 }
 
 class _VideoDetailsSheet extends StatefulWidget {
-  const _VideoDetailsSheet({required this.playerController});
+  const _VideoDetailsSheet({required this.playerController, required this.frameSummary});
 
   final PlayerController playerController;
+  final String frameSummary;
 
   @override
   State<_VideoDetailsSheet> createState() => _VideoDetailsSheetState();
@@ -146,7 +152,10 @@ class _VideoDetailsSheetState extends State<_VideoDetailsSheet>
           ),
           if (TvMode.enabled) ...[
             const SizedBox(height: 16),
-            TvPlaybackDiagnostics(player: () => playerController.playback.mediaPlayer),
+            TvPlaybackDiagnostics(
+              player: () => playerController.playback.mediaPlayer,
+              frameSummary: widget.frameSummary,
+            ),
           ],
           const SizedBox(height: 24),
           ContentSection.group(title: '媒体', children: [
