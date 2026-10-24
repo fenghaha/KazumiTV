@@ -1,6 +1,7 @@
 import 'dart:collection';
 import 'dart:convert';
 import 'dart:developer' as developer;
+import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
@@ -49,6 +50,16 @@ class TvFrameMonitor {
             },
         ],
       }));
+    });
+    // Some TV firmware disables logcat, including the VM service startup line.
+    // Keep authentication enabled; adb run-as can read this app-private file.
+    developer.Service.getInfo().then<void>((info) async {
+      final uri = info.serverUri;
+      if (uri == null) return;
+      await File('${Directory.systemTemp.path}/kazumi-tv-profile-service.json')
+          .writeAsString(jsonEncode({'uri': uri.toString()}));
+    }).catchError((Object _) {
+      // Diagnostics must never affect playback or request broader file access.
     });
   }
 
