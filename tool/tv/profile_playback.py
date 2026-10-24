@@ -50,6 +50,8 @@ def main():
     parser.add_argument("--uri-file", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--seconds", type=float, default=30)
+    parser.add_argument("--timeline", action="store_true")
+    parser.add_argument("--cpu", action="store_true")
     args = parser.parse_args()
     if not 1 <= args.seconds <= 45:
         parser.error("capture must be 1 to 45 seconds")
@@ -73,36 +75,41 @@ def main():
 
     vm = rpc("getVM")
     isolate = next(i["id"] for i in vm["isolates"] if i["name"] == "main")
-    flags = rpc("getVMTimelineFlags")
+    flags = rpc("getVMTimelineFlags") if args.timeline else None
     profiler = next(flag["valueAsString"] for flag in rpc("getFlagList")["flags"]
-                    if flag["name"] == "profiler")
-    if profiler != "true":
+                    if flag["name"] == "profiler") if args.cpu else None
+    if args.cpu and profiler != "true":
         rpc("setFlag", name="profiler", value="true")
-    origin = rpc("getVMTimelineMicros")["timestamp"]
+    origin = rpc("getVMTimelineMicros")["timestamp"] if args.cpu else 0
     # The VM's HTTP interface accepts a bracketed comma list, not JSON strings.
-    rpc("setVMTimelineFlags", recordedStreams="[Dart,Embedder,GC]")
-    rpc("clearVMTimeline")
+    if args.timeline:
+        rpc("setVMTimelineFlags", recordedStreams="[Dart,Embedder,GC]")
+        rpc("clearVMTimeline")
     try:
         rpc("ext.kazumi.tv.frames", isolateId=isolate, reset="true")
         print(json.dumps({"event": "capture_started", "seconds": args.seconds}), flush=True)
         time.sleep(args.seconds)
         samples = rpc("ext.kazumi.tv.frames", isolateId=isolate)
-        timeline = rpc("getVMTimeline")
-        end = rpc("getVMTimelineMicros")["timestamp"]
-        try:
-            cpu = rpc("getCpuSamples", isolateId=isolate,
-                      timeOriginMicros=origin, timeExtentMicros=end - origin)
-        except RuntimeError:
-            cpu = {"error": "cpu_profiler_unavailable"}
+        timeline = rpc("getVMTimeline") if args.timeline else {}
+        cpu = {}
+        if args.cpu:
+            end = rpc("getVMTimelineMicros")["timestamp"]
+            try:
+                cpu = rpc("getCpuSamples", isolateId=isolate,
+                          timeOriginMicros=origin, timeExtentMicros=end - origin)
+            except RuntimeError:
+                cpu = {"error": "cpu_profiler_unavailable"}
     finally:
-        rpc("setVMTimelineFlags", recordedStreams="[" + ",".join(flags["recordedStreams"]) + "]")
-        if profiler != "true":
+        if args.timeline:
+            rpc("setVMTimelineFlags", recordedStreams="[" + ",".join(flags["recordedStreams"]) + "]")
+        if args.cpu and profiler != "true":
             rpc("setFlag", name="profiler", value=profiler)
     args.output.mkdir(parents=True, exist_ok=True)
     private_json(args.output / "frames.json", samples)
     private_json(args.output / "timeline.json", timeline)
     private_json(args.output / "cpu.json", cpu)
     result = summarize(samples["frames"])
+    result.update(timeline_requested=args.timeline, cpu_requested=args.cpu)
     durations = defaultdict(list)
     stacks = defaultdict(list)
     for event in sorted(timeline.get("traceEvents", []), key=lambda event: event.get("ts", 0)):

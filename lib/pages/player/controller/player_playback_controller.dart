@@ -9,6 +9,8 @@ import 'package:kazumi/pages/player/controller/player_debug_controller.dart';
 import 'package:kazumi/pages/player/controller/player_super_resolution.dart';
 import 'package:kazumi/services/shaders/shader_asset_service.dart';
 import 'package:kazumi/utils/constants.dart';
+import 'package:kazumi/tv/tv_mode.dart';
+import 'package:kazumi/tv/player/tv_prefetch_trial.dart';
 import 'package:kazumi/services/logging/logger.dart';
 import 'package:kazumi/services/network/proxy_utils.dart';
 import 'package:kazumi/services/network/system_proxy_service.dart';
@@ -303,6 +305,7 @@ abstract class _PlayerPlaybackController with Store {
       return null;
     }
     _ownedPlayer = candidate;
+    if (TvMode.enabled) TvPrefetchTrial.attach(this, () => mediaPlayer);
     cachePolicy.startWatching();
 
     try {
@@ -616,6 +619,7 @@ abstract class _PlayerPlaybackController with Store {
 
   Future<void> stop() async {
     cachePolicy.stopWatching();
+    TvPrefetchTrial.detach(this);
     final ownedPlayer = _ownedPlayer;
     _ownedPlayer = null;
     videoController = null;
