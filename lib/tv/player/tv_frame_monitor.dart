@@ -1,13 +1,17 @@
 import 'dart:collection';
+import 'dart:convert';
+import 'dart:developer' as developer;
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 
 /// Bounded, in-memory timings. Active only while a TV playback overlay exists.
 class TvFrameMonitor {
   TvFrameMonitor({this.capacity = 180}) : assert(capacity > 1);
 
-  static final shared = TvFrameMonitor();
+  static final shared = TvFrameMonitor(capacity: 1800);
+  static bool _profileExtensionRegistered = false;
   final int capacity;
   final ListQueue<FrameTiming> _frames = ListQueue();
   int _owners = 0;
@@ -23,7 +27,29 @@ class TvFrameMonitor {
       _frames.clear();
       _playbackWindow = null;
       SchedulerBinding.instance.addTimingsCallback(record);
+      _registerProfileExtension();
     }
+  }
+
+  void _registerProfileExtension() {
+    if (!kProfileMode || _profileExtensionRegistered) return;
+    _profileExtensionRegistered = true;
+    // Read-only counters over the authenticated Dart VM service. No playback
+    // commands, URLs or user settings are exposed. Absent from release builds.
+    developer.registerExtension('ext.kazumi.tv.frames', (_, parameters) async {
+      if (parameters['reset'] == 'true') _frames.clear();
+      return developer.ServiceExtensionResponse.result(jsonEncode({
+        'capacity': capacity,
+        'frames': [
+          for (final frame in _frames)
+            {
+              'vsyncUs': frame.timestampInMicroseconds(FramePhase.vsyncStart),
+              'buildUs': frame.buildDuration.inMicroseconds,
+              'rasterUs': frame.rasterDuration.inMicroseconds,
+            },
+        ],
+      }));
+    });
   }
 
   void stop() {
