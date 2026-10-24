@@ -111,7 +111,12 @@ class _TvPlayerControlsState extends State<TvPlayerControls> {
     if (!mounted || _disposing) return;
     _back?.cancelExit();
     _initialTimer?.cancel();
-    if (!_visible) setState(() => _visible = true);
+    if (!_visible) {
+      TvFrameMonitor.shared.capturePlaybackWindow(
+        View.of(context).display.refreshRate,
+      );
+      setState(() => _visible = true);
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted &&
           _visible &&

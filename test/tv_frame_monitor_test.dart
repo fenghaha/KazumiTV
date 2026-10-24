@@ -41,4 +41,14 @@ void main() {
       expect(monitor.summary(double.nan), contains('60.0 fps / 60.0 Hz'));
     },
   );
+  test('menu rendering cannot overwrite the preceding playback window', () {
+    final monitor = TvFrameMonitor(capacity: 2);
+    monitor.record([frame(0), frame(16667)]);
+    monitor.capturePlaybackWindow(60);
+    final playback = monitor.playbackWindow;
+    monitor.record([frame(50000, raster: 80000), frame(100000, raster: 80000)]);
+    expect(monitor.summary(60), contains('20.0 fps'));
+    expect(monitor.playbackWindow, playback);
+    expect(playback, contains('60.0 fps'));
+  });
 }

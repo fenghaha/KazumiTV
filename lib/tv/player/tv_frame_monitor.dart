@@ -11,10 +11,17 @@ class TvFrameMonitor {
   final int capacity;
   final ListQueue<FrameTiming> _frames = ListQueue();
   int _owners = 0;
+  String? _playbackWindow;
+  String? get playbackWindow => _playbackWindow;
+
+  void capturePlaybackWindow(double refreshRate) {
+    _playbackWindow = summary(refreshRate);
+  }
 
   void start() {
     if (_owners++ == 0) {
       _frames.clear();
+      _playbackWindow = null;
       SchedulerBinding.instance.addTimingsCallback(record);
     }
   }
@@ -24,6 +31,7 @@ class TvFrameMonitor {
     if (--_owners == 0) {
       SchedulerBinding.instance.removeTimingsCallback(record);
       _frames.clear();
+      _playbackWindow = null;
     }
   }
 

@@ -20,7 +20,8 @@ Future<void> showVideoDetailsSheet(
 }) async {
   // Freeze the playback window before the modal adds its own animations/paint.
   final frameSummary = TvMode.enabled
-      ? TvFrameMonitor.shared.summary(View.of(context).display.refreshRate)
+      ? TvFrameMonitor.shared.playbackWindow ??
+          TvFrameMonitor.shared.summary(View.of(context).display.refreshRate)
       : '';
   await showAdaptiveBottomSheet<void>(
     context: context,

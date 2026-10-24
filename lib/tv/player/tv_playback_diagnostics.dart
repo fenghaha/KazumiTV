@@ -59,7 +59,7 @@ class _TvPlaybackDiagnosticsState extends State<TvPlaybackDiagnostics> {
       setState(
         () => _status =
             '${formatTvPlaybackDiagnostics(values)}\n'
-            '打开面板前 ${widget.frameSummary}',
+            '打开菜单前 ${widget.frameSummary}',
       );
     } catch (_) {
       // A disposed/replaced player or unsupported property has no UI side effect.
