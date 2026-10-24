@@ -21,6 +21,11 @@ android {
         }
         // buildType wins over flavor signing; override upstream's debug key.
         buildTypes.release.signingConfig signingConfigs.livingroom
+        // A profile build must upgrade the installed TV app without deleting
+        // its data. It uses the same external signing material as release.
+        buildTypes.configureEach { type ->
+            if (type.name == "profile") type.signingConfig signingConfigs.livingroom
+        }
     }
 }
 
@@ -31,7 +36,7 @@ def kernelFile = new File(System.getenv("KAZUMI_TV_ARM32_LIBMPV") ?:
         new File(rootDir, "../build/native/armeabi-v7a/libmpv.so").path)
 def allowUpstreamKernel = System.getenv("KAZUMI_TV_ALLOW_UPSTREAM_KERNEL") == "1"
 tasks.configureEach { task ->
-    if (task.name == "mergeLivingroomReleaseNativeLibs") {
+    if (task.name in ["mergeLivingroomReleaseNativeLibs", "mergeLivingroomProfileNativeLibs"]) {
         task.inputs.file(kernelSpecFile).withPropertyName("tvKernelSpec")
         task.inputs.property("tvAllowUpstreamKernel", allowUpstreamKernel)
         task.inputs.property("tvKernelPresent", kernelFile.isFile())
