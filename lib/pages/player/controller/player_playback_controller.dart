@@ -341,7 +341,9 @@ abstract class _PlayerPlaybackController with Store {
       }
       final tvPrefetchSeconds = _tvPrefetchSeconds;
       if (tvPrefetchSeconds != null) {
-        await pp.setProperty('cache-secs', tvPrefetchSeconds.toString());
+        // Share lifecycle serialization: initialization must not turn prefetch
+        // back on if the app moved to the background while the player loaded.
+        await setPrefetchSuspended(_prefetchSuspendWanted);
         if (!isCurrentPlayer(player)) {
           return await _discardIfNotCurrent(candidate);
         }
