@@ -1,3 +1,4 @@
+import 'package:kazumi/tv/tv_mode.dart';
 import 'package:canvas_danmaku/canvas_danmaku.dart';
 import 'package:flutter/material.dart';
 
@@ -25,6 +26,7 @@ Future<void> showDanmakuSettingsSheet({
   final destination =
       await showAdaptiveBottomSheet<_DanmakuSettingsDestination>(
     context: context,
+    useRootNavigator: TvMode.enabled,
     builder: (context) {
       return _DanmakuSettingsSheet(
         danmakuController: danmakuController,
@@ -36,6 +38,7 @@ Future<void> showDanmakuSettingsSheet({
   if (!context.mounted || destination == null) return;
   await showAdaptiveBottomSheet<void>(
     context: context,
+    useRootNavigator: TvMode.enabled,
     builder: (context) => switch (destination) {
       _DanmakuSettingsDestination.shield => const DanmakuShieldSettingsSheet(),
       _DanmakuSettingsDestination.timeOffset => DanmakuTimeOffsetSheet(
@@ -98,6 +101,7 @@ class _DanmakuSettingsSheetState extends State<_DanmakuSettingsSheet> {
                     value: _option.fontSize,
                     min: 10,
                     max: 48,
+                    divisions: TvMode.enabled ? 38 : null,
                     valueLabel: '${_option.fontSize.floor()}',
                     onChanged: (value) {
                       final fontSize = value.floorToDouble();

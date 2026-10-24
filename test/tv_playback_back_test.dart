@@ -103,6 +103,7 @@ void main() {
                                   onEpisodes: () async {},
                                   onNext: () {},
                                   onToggleDanmaku: () {},
+                                  onDanmakuSettings: () async {},
                                   onDanmakuSources: () async {},
                                   onDetails: () async {
                                     await showDialog<void>(

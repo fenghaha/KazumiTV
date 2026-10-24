@@ -1,3 +1,5 @@
+import 'package:kazumi/pages/settings/danmaku/danmaku_settings.dart';
+
 import 'dart:async';
 import 'dart:io';
 
@@ -114,6 +116,35 @@ void main() {
   }
 
   testWidgets(
+    'actual danmaku font grows above 25 with one remote step and shrinks symmetrically',
+    (tester) async {
+      await tester.runAsync(
+        () => GStorage.putSetting(SettingsKeys.danmakuFontSize, 25.0),
+      );
+      await open(tester, const DanmakuSettingsPage());
+      await focus(tester, '字体大小');
+      await tester.sendKeyEvent(LogicalKeyboardKey.select);
+      await tester.pumpAndSettle();
+      Future<void> adjust(LogicalKeyboardKey key) async {
+        await tester.runAsync(() async {
+          await tester.sendKeyEvent(key);
+          await Future<void>.delayed(const Duration(milliseconds: 15));
+        });
+        await tester.pumpAndSettle();
+      }
+
+      await adjust(LogicalKeyboardKey.arrowRight);
+      expect(GStorage.getSetting(SettingsKeys.danmakuFontSize), 26.0);
+      await adjust(LogicalKeyboardKey.arrowLeft);
+      expect(GStorage.getSetting(SettingsKeys.danmakuFontSize), 25.0);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.pumpAndSettle();
+      expect(GStorage.getSetting(SettingsKeys.danmakuFontSize), 25.0);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'actual sync page shows complete second card and can return to intro in a narrow TV pane',
     (tester) async {
       await open(
@@ -166,9 +197,15 @@ void main() {
   testWidgets(
     'actual player danmaku search opens native editor, cancel stays in sheet, submitted text reaches request',
     (tester) async {
-      await tester.runAsync(() => GStorage.putSetting(SettingsKeys.privateMode, true));
-      await tester.runAsync(() => GStorage.putSetting(
-          SettingsKeys.danmakuApiBaseUrl, 'https://fixture.invalid/danmaku'));
+      await tester.runAsync(
+        () => GStorage.putSetting(SettingsKeys.privateMode, true),
+      );
+      await tester.runAsync(
+        () => GStorage.putSetting(
+          SettingsKeys.danmakuApiBaseUrl,
+          'https://fixture.invalid/danmaku',
+        ),
+      );
       final controller = PlayerDanmakuController(
         isLocalPlayback: () => false,
         downloadController: _UnusedDownloads(),
@@ -215,10 +252,14 @@ void main() {
       await tester.pumpAndSettle();
       expect(edits, 2);
       expect(adapter.keyword, '新的搜索词');
-      expect(adapter.headers.keys.map((k) => k.toLowerCase()),
-          isNot(contains('x-appid')));
-      expect(adapter.headers.keys.map((k) => k.toLowerCase()),
-          isNot(contains('x-signature')));
+      expect(
+        adapter.headers.keys.map((k) => k.toLowerCase()),
+        isNot(contains('x-appid')),
+      );
+      expect(
+        adapter.headers.keys.map((k) => k.toLowerCase()),
+        isNot(contains('x-signature')),
+      );
       expect(find.text('未找到番剧'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
