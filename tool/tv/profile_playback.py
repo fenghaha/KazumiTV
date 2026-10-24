@@ -74,8 +74,13 @@ def main():
     vm = rpc("getVM")
     isolate = next(i["id"] for i in vm["isolates"] if i["name"] == "main")
     flags = rpc("getVMTimelineFlags")
+    profiler = next(flag["valueAsString"] for flag in rpc("getFlagList")["flags"]
+                    if flag["name"] == "profiler")
+    if profiler != "true":
+        rpc("setFlag", name="profiler", value="true")
     origin = rpc("getVMTimelineMicros")["timestamp"]
-    rpc("setVMTimelineFlags", recordedStreams=json.dumps(["Dart", "Embedder", "GC"]))
+    # The VM's HTTP interface accepts a bracketed comma list, not JSON strings.
+    rpc("setVMTimelineFlags", recordedStreams="[Dart,Embedder,GC]")
     rpc("clearVMTimeline")
     try:
         rpc("ext.kazumi.tv.frames", isolateId=isolate, reset="true")
@@ -90,7 +95,9 @@ def main():
         except RuntimeError:
             cpu = {"error": "cpu_profiler_unavailable"}
     finally:
-        rpc("setVMTimelineFlags", recordedStreams=json.dumps(flags["recordedStreams"]))
+        rpc("setVMTimelineFlags", recordedStreams="[" + ",".join(flags["recordedStreams"]) + "]")
+        if profiler != "true":
+            rpc("setFlag", name="profiler", value=profiler)
     args.output.mkdir(parents=True, exist_ok=True)
     private_json(args.output / "frames.json", samples)
     private_json(args.output / "timeline.json", timeline)
