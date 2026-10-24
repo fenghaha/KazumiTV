@@ -26,6 +26,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:kazumi/pages/video/video_controller.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:canvas_danmaku/canvas_danmaku.dart';
+import 'package:kazumi/tv/player/tv_danmaku_trace.dart';
 import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:kazumi/pages/player/video_details_sheet.dart';
 import 'package:screen_brightness_platform_interface/screen_brightness_platform_interface.dart';
@@ -1163,13 +1164,16 @@ class _PlayerItemState extends State<PlayerItem>
             myController.isDanmakuBlocked(danmaku.message)) {
           return;
         }
-        playerController.danmaku.canvasController.addDanmaku(
-          DanmakuContentItem(
-            danmaku.message,
-            color: color,
-            type: _danmakuItemType(danmaku),
-          ),
+        final content = DanmakuContentItem(
+          danmaku.message,
+          color: color,
+          type: _danmakuItemType(danmaku),
         );
+        if (TvMode.enabled) {
+          TvDanmakuTrace.add(playerController.danmaku.canvasController, content);
+        } else {
+          playerController.danmaku.canvasController.addDanmaku(content);
+        }
       });
     }
   }

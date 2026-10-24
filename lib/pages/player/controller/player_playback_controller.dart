@@ -12,6 +12,7 @@ import 'package:kazumi/utils/constants.dart';
 import 'package:kazumi/tv/tv_mode.dart';
 import 'package:kazumi/tv/player/tv_prefetch_trial.dart';
 import 'package:kazumi/tv/player/tv_prefetch_policy.dart';
+import 'package:kazumi/tv/player/tv_device_profile.dart';
 import 'package:kazumi/services/logging/logger.dart';
 import 'package:kazumi/services/network/proxy_utils.dart';
 import 'package:kazumi/services/network/system_proxy_service.dart';
@@ -80,6 +81,7 @@ abstract class _PlayerPlaybackController with Store {
 
   int? get _tvPrefetchSeconds => TvPrefetchPolicy.limit(
     androidTv: TvMode.enabled && Platform.isAndroid,
+    deviceProfile: TvDeviceProfile.current,
     totalMemoryBytes: TvMode.totalMemoryBytes,
   );
   VideoController? videoController;
