@@ -7,12 +7,14 @@ void main() {
       'demuxer-cache-state':
           '{"raw-input-rate":1500000,"file-cache-bytes":10485760}',
       'demuxer-cache-duration': '0.256000',
+      'cache-secs': '60.000000',
       'paused-for-cache': 'yes',
       'hwdec-current': 'mediacodec',
       'current-vo': 'mediacodec_embed',
     });
     expect(text, contains('1.50 MB/s (12.00 Mbps)'));
     expect(text, contains('0.26 秒'));
+    expect(text, contains('预读上限: 60.00 秒'));
     expect(text, contains('缓冲暂停: yes'));
     expect(text, contains('缓存文件: 10.00 MiB'));
   });

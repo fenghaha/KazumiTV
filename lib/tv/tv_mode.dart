@@ -12,6 +12,7 @@ class TvMode {
   TvMode._();
 
   static bool enabled = const bool.fromEnvironment('KAZUMI_TV');
+  static int? totalMemoryBytes;
   static const channel = MethodChannel('kazumi/tv');
 
   static Future<void> initialize() async {
@@ -34,6 +35,13 @@ class TvMode {
     FocusManager.instance.highlightStrategy =
         FocusHighlightStrategy.alwaysTraditional;
     if (Platform.isAndroid) {
+      try {
+        totalMemoryBytes = await channel.invokeMethod<int>('getTotalMemoryBytes');
+      } on PlatformException {
+        totalMemoryBytes = null;
+      } on MissingPluginException {
+        totalMemoryBytes = null;
+      }
       await SystemChrome.setPreferredOrientations([
         DeviceOrientation.landscapeLeft,
         DeviceOrientation.landscapeRight,

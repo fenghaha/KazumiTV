@@ -43,6 +43,7 @@ class _TvPlaybackDiagnosticsState extends State<TvPlaybackDiagnostics> {
         'hwdec-current',
         'current-vo',
         'demuxer-cache-duration',
+        'cache-secs',
         'demuxer-cache-state',
         'frame-drop-count',
         'decoder-frame-drop-count',
@@ -105,6 +106,7 @@ String formatTvPlaybackDiagnostics(Map<String, String> values) {
       '读取: ${number(rate, scale: 1 / 1000000)} MB/s '
       '(${number(rate, scale: 8 / 1000000)} Mbps)\n'
       '缓存: ${number(values['demuxer-cache-duration'])} 秒  '
+      '预读上限: ${number(values['cache-secs'])} 秒\n'
       '缓冲暂停: ${value('paused-for-cache')}  '
       '位置: ${number(values['time-pos'])} 秒\n'
       '渲染丢帧: ${value('frame-drop-count')}  '

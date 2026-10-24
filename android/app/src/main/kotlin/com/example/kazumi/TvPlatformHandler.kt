@@ -1,6 +1,7 @@
 package com.example.kazumi
 
 import android.app.Activity
+import android.app.ActivityManager
 import android.app.AlertDialog
 import android.app.Application
 import android.app.UiModeManager
@@ -54,6 +55,12 @@ class TvPlatformHandler private constructor(
                     result.success(lanAddresses())
                 } catch (_: SecurityException) {
                     result.error("NETWORK_UNAVAILABLE", "Network information unavailable", null)
+                }
+                "getTotalMemoryBytes" -> {
+                    val manager = activity.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+                    val memory = ActivityManager.MemoryInfo()
+                    manager.getMemoryInfo(memory)
+                    result.success(memory.totalMem)
                 }
                 "editText" -> openEditor(call, result)
                 else -> result.notImplemented()

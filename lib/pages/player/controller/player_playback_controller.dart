@@ -11,6 +11,7 @@ import 'package:kazumi/services/shaders/shader_asset_service.dart';
 import 'package:kazumi/utils/constants.dart';
 import 'package:kazumi/tv/tv_mode.dart';
 import 'package:kazumi/tv/player/tv_prefetch_trial.dart';
+import 'package:kazumi/tv/player/tv_prefetch_policy.dart';
 import 'package:kazumi/services/logging/logger.dart';
 import 'package:kazumi/services/network/proxy_utils.dart';
 import 'package:kazumi/services/network/system_proxy_service.dart';
@@ -76,6 +77,11 @@ abstract class _PlayerPlaybackController with Store {
 
   _OwnedPlayer? _ownedPlayer;
   Player? get mediaPlayer => _ownedPlayer?.player;
+
+  int? get _tvPrefetchSeconds => TvPrefetchPolicy.limit(
+    androidTv: TvMode.enabled && Platform.isAndroid,
+    totalMemoryBytes: TvMode.totalMemoryBytes,
+  );
   VideoController? videoController;
 
   final AsyncSerialQueue _prefetchWrites = AsyncSerialQueue();
@@ -238,8 +244,8 @@ abstract class _PlayerPlaybackController with Store {
   /// demuxer then burns through ffmpeg's reconnect/segment retries and marks
   /// the stream EOF, leaving playback permanently stuck once foregrounded.
   /// Suspending zeroes the readahead window so no new requests are issued
-  /// while buffered data stays available; restore values are mpv defaults,
-  /// which media_kit leaves untouched. Writes are serialized and apply the
+  /// while buffered data stays available; restore the constrained-TV window
+  /// or the existing upstream resume value. Writes are serialized and apply the
   /// latest requested state, so rapid lifecycle flips cannot reorder.
   Future<void> setPrefetchSuspended(bool suspended) async {
     if (!Platform.isAndroid) {
@@ -254,7 +260,9 @@ abstract class _PlayerPlaybackController with Store {
       }
       try {
         final pp = player.platform as NativePlayer;
-        await pp.setProperty('cache-secs', wanted ? '0' : '36000');
+        await pp.setProperty(
+          'cache-secs', wanted ? '0' : (_tvPrefetchSeconds ?? 36000).toString(),
+        );
         if (!isCurrentPlayer(player)) {
           return;
         }
@@ -330,6 +338,13 @@ abstract class _PlayerPlaybackController with Store {
       await cachePolicy.apply();
       if (!isCurrentPlayer(player)) {
         return await _discardIfNotCurrent(candidate);
+      }
+      final tvPrefetchSeconds = _tvPrefetchSeconds;
+      if (tvPrefetchSeconds != null) {
+        await pp.setProperty('cache-secs', tvPrefetchSeconds.toString());
+        if (!isCurrentPlayer(player)) {
+          return await _discardIfNotCurrent(candidate);
+        }
       }
       await pp.setProperty("af", "scaletempo2=max-speed=8");
       if (!isCurrentPlayer(player)) {
