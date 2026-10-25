@@ -55,12 +55,14 @@ class TvPlayerControls extends StatefulWidget {
 }
 
 class _TvPlayerControlsState extends State<TvPlayerControls> {
+  final _closeFocus = FocusNode(debugLabel: 'TV player close controls');
   final _playFocus = FocusNode(debugLabel: 'TV playback toggle');
   final _actionFocus = List.generate(
     6,
     (index) => FocusNode(debugLabel: 'TV player action ${index + 1}'),
   );
   List<FocusNode> get _actionNodes => [_playFocus, ..._actionFocus];
+  FocusNode? _lastActionFocus;
   final _seekControl = GlobalKey<TvSliderTileState>();
   Timer? _initialTimer;
   Timer? _seekHintTimer;
@@ -193,6 +195,66 @@ class _TvPlayerControlsState extends State<TvPlayerControls> {
     }
   }
 
+  bool _canFocus(FocusNode node) =>
+      node.context?.mounted == true && node.canRequestFocus;
+
+  bool _moveVertically(LogicalKeyboardKey key) {
+    final up = key == LogicalKeyboardKey.arrowUp;
+    if (!up && key != LogicalKeyboardKey.arrowDown) return false;
+    final seek = _seekControl.currentState;
+    if (seek == null) return false;
+    if (seek.hasFocus) {
+      if (up) {
+        _closeFocus.requestFocus();
+      } else {
+        final last = _lastActionFocus;
+        if (last != null && _canFocus(last)) {
+          last.requestFocus();
+        } else {
+          for (final node in _actionNodes) {
+            if (_canFocus(node)) {
+              node.requestFocus();
+              break;
+            }
+          }
+        }
+      }
+      return true;
+    }
+    if (_closeFocus.hasFocus) {
+      if (!up) seek.requestFocus();
+      return true;
+    }
+    final current = FocusManager.instance.primaryFocus;
+    if (!_actionNodes.contains(current)) return false;
+    _lastActionFocus = current;
+    final rect = current!.rect;
+    // Wrap can put buttons on several rows. Traverse the nearest button row
+    // first; above the top row, always enter the full-width seek control.
+    final candidates = _actionNodes.where((node) {
+      if (node == current || !_canFocus(node)) return false;
+      return up
+          ? node.rect.bottom <= rect.top - 1
+          : node.rect.top >= rect.bottom + 1;
+    }).toList()
+      ..sort((a, b) {
+        final aGap = up ? rect.top - a.rect.bottom : a.rect.top - rect.bottom;
+        final bGap = up ? rect.top - b.rect.bottom : b.rect.top - rect.bottom;
+        final vertical = aGap.compareTo(bGap);
+        return vertical != 0
+            ? vertical
+            : (a.rect.center.dx - rect.center.dx).abs().compareTo(
+                (b.rect.center.dx - rect.center.dx).abs(),
+              );
+      });
+    if (candidates.isNotEmpty) {
+      candidates.first.requestFocus();
+    } else if (up) {
+      seek.requestFocus();
+    }
+    return true;
+  }
+
   KeyEventResult _handleRemote(KeyEvent event) {
     if (!_ownsInput || (event is! KeyDownEvent && event is! KeyRepeatEvent)) {
       return KeyEventResult.ignored;
@@ -233,6 +295,7 @@ class _TvPlayerControlsState extends State<TvPlayerControls> {
       if (!repeat) _showControls();
       return KeyEventResult.handled;
     }
+    if (_visible && _moveVertically(key)) return KeyEventResult.handled;
     // Keep the seven action buttons reachable even when Wrap changes rows or the
     // surrounding player contributes other spatial focus candidates.
     if (_visible &&
@@ -298,6 +361,7 @@ class _TvPlayerControlsState extends State<TvPlayerControls> {
     FocusManager.instance.removeEarlyKeyEventHandler(_handleRemote);
     _initialTimer?.cancel();
     _seekHintTimer?.cancel();
+    _closeFocus.dispose();
     _playFocus.dispose();
     for (final node in _actionFocus) {
       node.dispose();
@@ -387,7 +451,12 @@ class _TvPlayerControlsState extends State<TvPlayerControls> {
             children: [
               Row(
                 children: [
-                  _button('收起菜单', Icons.arrow_back_rounded, _hideControls),
+                  _button(
+                    '收起菜单',
+                    Icons.arrow_back_rounded,
+                    _hideControls,
+                    focusNode: _closeFocus,
+                  ),
                   const SizedBox(width: 20),
                   Expanded(
                     child: Text(
@@ -486,16 +555,16 @@ class _TvPlayerControlsState extends State<TvPlayerControls> {
                             focusNode: _actionFocus[3],
                           ),
                           _button(
-                            '播放信息',
-                            Icons.info_outline_rounded,
-                            () => unawaited(_openPanel(widget.onDetails)),
-                            focusNode: _actionFocus[4],
-                          ),
-                          _button(
                             '弹幕设置',
                             Icons.tune_rounded,
                             () =>
                                 unawaited(_openPanel(widget.onDanmakuSettings)),
+                            focusNode: _actionFocus[4],
+                          ),
+                          _button(
+                            '播放信息',
+                            Icons.info_outline_rounded,
+                            () => unawaited(_openPanel(widget.onDetails)),
                             focusNode: _actionFocus[5],
                           ),
                         ],

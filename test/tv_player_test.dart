@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_modular/flutter_modular.dart';
-import 'package:kazumi/tv/settings/tv_slider_tile.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kazumi/modules/roads/road_module.dart';
 import 'package:kazumi/tv/player/tv_episode_picker.dart';
@@ -134,7 +133,7 @@ void main() {
 
   for (final size in [const Size(960, 540), const Size(1280, 720)]) {
     testWidgets(
-      'all six player actions are reachable and both final buttons activate at $size',
+      'all seven player actions follow the grouped danmaku order at $size',
       (tester) async {
         await mount(tester, size: size);
         for (var i = 0; i < 4; i++) {
@@ -158,7 +157,7 @@ void main() {
         );
         await tester.sendKeyEvent(LogicalKeyboardKey.select);
         await tester.pumpAndSettle();
-        expect(detailsOpens, 1);
+        expect(settingsOpens, 1);
         for (var i = 0; i < 6; i++) {
           await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
           await tester.pumpAndSettle();
@@ -169,7 +168,7 @@ void main() {
         );
         await tester.sendKeyEvent(LogicalKeyboardKey.select);
         await tester.pumpAndSettle();
-        expect(settingsOpens, 1);
+        expect(detailsOpens, 1);
         expect(toggles, 0);
         expect(tester.takeException(), isNull);
       },
@@ -261,7 +260,7 @@ void main() {
     },
   );
   testWidgets(
-    'real router: progress Up/Down never seeks, Back ends edit then controls then playback; modal closes first',
+    'real router: D-pad reaches progress, Back blurs before closing controls or playback',
     (tester) async {
       tester.view.physicalSize = const Size(960, 540);
       tester.view.devicePixelRatio = 1;
@@ -338,16 +337,32 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('打开播放器'));
       await tester.pumpAndSettle();
-      final slider = find.byType(TvSliderTile);
-      final control = find
-          .descendant(of: slider, matching: find.byType(GestureDetector))
-          .first;
-      Focus.of(tester.element(control)).requestFocus();
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
       await tester.pumpAndSettle();
+      expect(
+        FocusManager.instance.primaryFocus?.debugLabel,
+        'TV adjustable setting',
+      );
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+      await tester.pumpAndSettle();
+      expect(
+        FocusManager.instance.primaryFocus?.debugLabel,
+        'TV player close controls',
+      );
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.pumpAndSettle();
+      expect(
+        FocusManager.instance.primaryFocus?.debugLabel,
+        'TV adjustable setting',
+      );
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
       await tester.pumpAndSettle();
       expect(seeks, isEmpty);
-      Focus.of(tester.element(control)).requestFocus();
+      expect(
+        FocusManager.instance.primaryFocus?.debugLabel,
+        'TV playback toggle',
+      );
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
       await tester.pumpAndSettle();
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
       await tester.pumpAndSettle();
