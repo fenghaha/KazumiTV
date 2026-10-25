@@ -17,8 +17,11 @@ class TvSliderTile extends StatefulWidget {
     this.leading,
     this.description,
     this.enabled = true,
+    this.parentHandlesBack = false,
   });
   final bool enabled;
+  /// The player owns remote/system Back and calls [TvSliderTileState.blur].
+  final bool parentHandlesBack;
   final Widget title;
   final Widget? description;
   final IconData? leading;
@@ -32,26 +35,40 @@ class TvSliderTile extends StatefulWidget {
 
 class TvSliderTileState extends State<TvSliderTile> {
   final _focus = FocusNode(debugLabel: 'TV adjustable setting');
-  bool _editing = false;
-  bool get isEditing => _editing;
-  void finishEditing() => _end();
+  // Back removes the slider highlight, but keeps a spatial origin for the next
+  // Up/Down. Unfocusing into the route scope would lose that origin.
+  final _navigationFocus = FocusNode(
+    debugLabel: 'TV slider navigation anchor',
+    skipTraversal: true,
+  );
+  bool _focused = false;
+  bool get isFocused => _focused;
   bool _disposing = false;
   TvSettingsNavigationController? _navigation;
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _navigation = TvSettingsEditorScope.of(context);
-  }
-
-  void _begin() {
-    if (_editing) return;
-    setState(() => _editing = true);
-    _navigation?.registerEditor(this, _end);
-  }
-
-  void _end() {
+    final navigation = TvSettingsEditorScope.of(context);
+    if (identical(navigation, _navigation)) return;
     _navigation?.clearEditor(this);
-    if (mounted && !_disposing && _editing) setState(() => _editing = false);
+    _navigation = navigation;
+    if (_focused) _navigation?.registerEditor(this, blur);
+  }
+
+  void _onFocusChange(bool focused) {
+    if (!mounted || _disposing || focused == _focused) return;
+    setState(() => _focused = focused);
+    if (focused) {
+      _navigation?.registerEditor(this, blur);
+    } else {
+      _navigation?.clearEditor(this);
+    }
+  }
+
+  void blur() {
+    if (!_focused) return;
+    _onFocusChange(false);
+    _navigationFocus.requestFocus();
   }
 
   @override
@@ -59,6 +76,7 @@ class TvSliderTileState extends State<TvSliderTile> {
     _disposing = true;
     _navigation?.clearEditor(this);
     _focus.dispose();
+    _navigationFocus.dispose();
     super.dispose();
   }
 
@@ -67,18 +85,34 @@ class TvSliderTileState extends State<TvSliderTile> {
       return KeyEventResult.ignored;
     }
     final key = event.logicalKey;
-    if (!_editing) return KeyEventResult.ignored;
+    if (node.hasPrimaryFocus &&
+        (key == LogicalKeyboardKey.arrowUp ||
+            key == LogicalKeyboardKey.arrowDown)) {
+      // The anchor must never enter directional history: reversing direction
+      // should focus the slider again, rather than revisit its invisible anchor.
+      final policy = FocusTraversalGroup.maybeOf(context);
+      final scope = node.nearestScope;
+      if (scope != null) policy?.invalidateScopeData(scope);
+      node.focusInDirection(
+        key == LogicalKeyboardKey.arrowUp
+            ? TraversalDirection.up
+            : TraversalDirection.down,
+      );
+      if (scope != null) policy?.invalidateScopeData(scope);
+      return KeyEventResult.handled;
+    }
+    if (!_focused) return KeyEventResult.ignored;
     if (key == LogicalKeyboardKey.escape || key == LogicalKeyboardKey.goBack) {
-      _end();
+      if (event is KeyDownEvent) blur();
       return KeyEventResult.handled;
     }
     if (key == LogicalKeyboardKey.arrowUp ||
         key == LogicalKeyboardKey.arrowDown) {
-      _end();
       return KeyEventResult.ignored;
     }
     if (key == LogicalKeyboardKey.arrowLeft ||
         key == LogicalKeyboardKey.arrowRight) {
+      if (!widget.enabled) return KeyEventResult.handled;
       final step = (widget.max - widget.min) / (widget.divisions ?? 100);
       final next =
           (widget.value + (key == LogicalKeyboardKey.arrowRight ? step : -step))
@@ -92,21 +126,20 @@ class TvSliderTileState extends State<TvSliderTile> {
 
   @override
   Widget build(BuildContext context) => PopScope(
-    canPop: !_editing,
+    // Settings/player routes consume Back themselves. Only standalone sheets
+    // need this PopScope, otherwise one platform pop could also close a menu.
+    canPop: widget.parentHandlesBack || _navigation != null || !_focused,
     onPopInvokedWithResult: (didPop, result) {
-      if (!didPop && _editing) _end();
+      if (!didPop && !widget.parentHandlesBack && _navigation == null) blur();
     },
     child: Focus(
-      canRequestFocus: false,
-      skipTraversal: true,
+      focusNode: _navigationFocus,
       onKeyEvent: _key,
       child: TvFocusable(
         focusNode: _focus,
         focusableWhenDisabled: true,
-        onPressed: widget.enabled ? () => _editing ? _end() : _begin() : null,
-        onFocusChange: (focused) {
-          if (!focused) _end();
-        },
+        onPressed: widget.enabled ? _focus.requestFocus : null,
+        onFocusChange: _onFocusChange,
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -136,18 +169,16 @@ class TvSliderTileState extends State<TvSliderTile> {
                 min: widget.min,
                 max: widget.max,
                 divisions: widget.divisions,
-                onChangeStart: (_) {
-                  _focus.requestFocus();
-                  _begin();
-                },
-                onChangeEnd: (_) => _end(),
+                onChangeStart: widget.enabled
+                    ? (_) => _focus.requestFocus()
+                    : null,
                 onChanged: widget.enabled ? widget.onChanged : null,
               ),
             ),
             Text(
-              _editing ? '左右调节 · 确认或返回结束 · 上下换项' : '按确认调节 · 上下换项',
+              _focused ? '左右调节 · 上下换项 · 返回取消焦点' : '上下换项 · 获焦后左右调节',
               style: TextStyle(
-                color: _editing ? TvTheme.focus : TvTheme.muted,
+                color: _focused ? TvTheme.focus : TvTheme.muted,
                 fontSize: 16,
               ),
             ),

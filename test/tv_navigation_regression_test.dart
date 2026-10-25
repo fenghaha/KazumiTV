@@ -143,7 +143,7 @@ void main() {
     expect(find.text('第一项'), findsOneWidget);
   });
 
-  testWidgets('slider browses with Up/Down and adjusts only after OK', (
+  testWidgets('slider adjusts on focus and keeps vertical navigation after Back', (
     tester,
   ) async {
     var value = 1.0;
@@ -197,30 +197,48 @@ void main() {
     );
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
     await tester.pumpAndSettle();
-    expect(value, 1.0);
+    expect(value, closeTo(1.1, .0001));
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.pumpAndSettle();
     expect(after.hasFocus, isTrue);
-    expect(value, 1.0);
+    expect(value, closeTo(1.1, .0001));
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
-    await tester.pumpAndSettle();
-    await tester.sendKeyEvent(LogicalKeyboardKey.select);
     await tester.pumpAndSettle();
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
     await tester.pumpAndSettle();
-    expect(value, closeTo(1.1, .0001));
+    expect(value, closeTo(1.2, .0001));
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
     await tester.pumpAndSettle();
     expect(before.hasFocus, isTrue);
-    expect(value, closeTo(1.1, .0001));
+    expect(value, closeTo(1.2, .0001));
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-    await tester.pumpAndSettle();
-    await tester.sendKeyEvent(LogicalKeyboardKey.select);
     await tester.pumpAndSettle();
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
-    expect(find.text('按确认调节 · 上下换项'), findsOneWidget);
+    expect(find.text('上下换项 · 获焦后左右调节'), findsOneWidget);
+    expect(
+      FocusManager.instance.primaryFocus?.debugLabel,
+      'TV slider navigation anchor',
+    );
     expect(find.text('倍速'), findsOneWidget);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.pumpAndSettle();
+    expect(after.hasFocus, isTrue);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+    await tester.pumpAndSettle();
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+    await tester.pumpAndSettle();
+    expect(value, closeTo(1.3, .0001));
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+    expect(
+      FocusManager.instance.primaryFocus?.debugLabel,
+      'TV slider navigation anchor',
+    );
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+    await tester.pumpAndSettle();
+    expect(before.hasFocus, isTrue);
+    expect(value, closeTo(1.3, .0001));
   });
 
   testWidgets(
