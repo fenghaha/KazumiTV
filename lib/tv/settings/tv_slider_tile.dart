@@ -43,6 +43,13 @@ class TvSliderTileState extends State<TvSliderTile> {
   );
   bool _focused = false;
   bool get isFocused => _focused;
+  /// Includes the invisible navigation anchor retained after Back.
+  bool get hasFocus => _navigationFocus.hasFocus;
+
+  void requestFocus() {
+    if (mounted && !_disposing) _focus.requestFocus();
+  }
+
   bool _disposing = false;
   TvSettingsNavigationController? _navigation;
   @override
