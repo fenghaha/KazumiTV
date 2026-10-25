@@ -382,16 +382,26 @@ class _TvPlayerControlsState extends State<TvPlayerControls> {
     IconData icon,
     VoidCallback? onPressed, {
     FocusNode? focusNode,
+    bool iconOnly = false,
   }) => TvFocusable(
     onPressed: onPressed,
     focusNode: focusNode,
-    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-    child: Row(
+    semanticLabel: iconOnly ? title : null,
+    focusedColor: const Color(0x24FFFFFF),
+    padding: iconOnly
+        ? const EdgeInsets.symmetric(horizontal: 4, vertical: 2)
+        : const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+    child: iconOnly ? Tooltip(
+      message: title,
+      child: Icon(icon, size: 20, color: Colors.white),
+    ) : Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 24),
-        const SizedBox(width: 10),
-        Text(title, style: const TextStyle(fontSize: 18)),
+        Icon(icon, size: 20, color: Colors.white),
+        const SizedBox(width: 6),
+        Text(title, style: const TextStyle(
+          fontSize: 16, height: 1.1, color: Colors.white,
+        )),
       ],
     ),
   );
@@ -413,21 +423,21 @@ class _TvPlayerControlsState extends State<TvPlayerControls> {
           ? Align(
               alignment: Alignment.bottomCenter,
               child: Padding(
-                padding: const EdgeInsets.only(bottom: 50),
+                padding: const EdgeInsets.only(bottom: 28),
                 child: DecoratedBox(
                   decoration: BoxDecoration(
-                    color: const Color(0xEB101C2C),
-                    borderRadius: BorderRadius.circular(12),
+                    color: const Color(0x99000000),
+                    borderRadius: BorderRadius.circular(6),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 12,
+                      horizontal: 14,
+                      vertical: 6,
                     ),
                     child: Text(
                       '${_time(widget.position)} / ${_time(widget.duration)}',
                       style: const TextStyle(
-                        fontSize: 26,
+                        fontSize: 20,
                         color: Color(0xFFF5F1E8),
                       ),
                     ),
@@ -441,145 +451,148 @@ class _TvPlayerControlsState extends State<TvPlayerControls> {
       1.0,
       double.infinity,
     );
-    return Positioned.fill(
-      child: ColoredBox(
-        color: const Color(0x55000000),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(36, 24, 36, 24),
+    return Positioned(
+      left: 0,
+      right: 0,
+      bottom: 0,
+      child: DecoratedBox(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.transparent,
+              Color(0x88000000),
+              Color(0xCC000000),
+            ],
+            stops: [0, .35, 1],
+          ),
+        ),
+        child: SafeArea(
+          top: false,
+          minimum: const EdgeInsets.fromLTRB(24, 18, 24, 12),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Row(
                 children: [
                   _button(
                     '收起菜单',
-                    Icons.arrow_back_rounded,
+                    Icons.keyboard_arrow_down_rounded,
                     _hideControls,
                     focusNode: _closeFocus,
+                    iconOnly: true,
                   ),
-                  const SizedBox(width: 20),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       widget.title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontSize: 25,
-                        color: Color(0xFFF5F1E8),
-                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
                 ],
               ),
-              const Spacer(),
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  color: const Color(0xF0101C2C),
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(22),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Row(
-                        children: [
-                          Text(
-                            _time(widget.position),
-                            style: const TextStyle(fontSize: 19),
-                          ),
-                          Expanded(
-                            child: TvSliderTile(
-                              key: _seekControl,
-                              parentHandlesBack: true,
-                              title: const Text('播放进度'),
-                              valueLabel: _time(widget.position),
-                              value: widget.position.inMilliseconds
-                                  .toDouble()
-                                  .clamp(0.0, max),
-                              min: 0,
-                              max: max,
-                              divisions: (widget.duration.inSeconds ~/ 10)
-                                  .clamp(1, 100000),
-                              enabled:
-                                  !widget.busy &&
-                                  widget.duration > Duration.zero,
-                              onChanged: (value) => widget.onSeek(
-                                Duration(milliseconds: value.round()),
-                              ),
-                            ),
-                          ),
-                          Text(
-                            _time(widget.duration),
-                            style: const TextStyle(fontSize: 19),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 12,
-                        runSpacing: 12,
-                        children: [
-                          _button(
-                            widget.playing ? '暂停' : '播放',
-                            widget.playing
-                                ? Icons.pause_rounded
-                                : Icons.play_arrow_rounded,
-                            widget.busy ? null : _toggleAndHide,
-                            focusNode: _playFocus,
-                          ),
-                          _button(
-                            '选集 / 线路',
-                            Icons.grid_view_rounded,
-                            () => unawaited(_openEpisodes()),
-                            focusNode: _actionFocus[0],
-                          ),
-                          _button(
-                            '下一集',
-                            Icons.skip_next_rounded,
-                            widget.busy ? null : widget.onNext,
-                            focusNode: _actionFocus[1],
-                          ),
-                          _button(
-                            widget.danmakuEnabled ? '弹幕开' : '弹幕关',
-                            Icons.subtitles_outlined,
-                            widget.onToggleDanmaku,
-                            focusNode: _actionFocus[2],
-                          ),
-                          _button(
-                            '弹幕匹配',
-                            Icons.manage_search_rounded,
-                            () =>
-                                unawaited(_openPanel(widget.onDanmakuSources)),
-                            focusNode: _actionFocus[3],
-                          ),
-                          _button(
-                            '弹幕设置',
-                            Icons.tune_rounded,
-                            () =>
-                                unawaited(_openPanel(widget.onDanmakuSettings)),
-                            focusNode: _actionFocus[4],
-                          ),
-                          _button(
-                            '播放信息',
-                            Icons.info_outline_rounded,
-                            () => unawaited(_openPanel(widget.onDetails)),
-                            focusNode: _actionFocus[5],
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        '返回收起菜单 · 连按两次返回退出播放 · 左右快进 / 后退 10 秒',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Color(0xFFAAB9CB),
-                        ),
-                      ),
-                    ],
+              const SizedBox(height: 2),
+              Row(
+                children: [
+                  Text(
+                    _time(widget.position),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.white,
+                      fontFeatures: [FontFeature.tabularFigures()],
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TvSliderTile(
+                      key: _seekControl,
+                      parentHandlesBack: true,
+                      compact: true,
+                      semanticLabel: '播放进度',
+                      title: const Text('播放进度'),
+                      valueLabel: _time(widget.position),
+                      value: widget.position.inMilliseconds
+                          .toDouble()
+                          .clamp(0.0, max),
+                      min: 0,
+                      max: max,
+                      divisions: (widget.duration.inSeconds ~/ 10)
+                          .clamp(1, 100000),
+                      enabled: !widget.busy && widget.duration > Duration.zero,
+                      onChanged: (value) => widget.onSeek(
+                        Duration(milliseconds: value.round()),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    _time(widget.duration),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.white,
+                      fontFeatures: [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 2),
+              Wrap(
+                spacing: 4,
+                runSpacing: 4,
+                children: [
+                  _button(
+                    widget.playing ? '暂停' : '播放',
+                    widget.playing
+                        ? Icons.pause_rounded
+                        : Icons.play_arrow_rounded,
+                    widget.busy ? null : _toggleAndHide,
+                    focusNode: _playFocus,
+                  ),
+                  _button(
+                    '选集 / 线路',
+                    Icons.grid_view_rounded,
+                    () => unawaited(_openEpisodes()),
+                    focusNode: _actionFocus[0],
+                  ),
+                  _button(
+                    '下一集',
+                    Icons.skip_next_rounded,
+                    widget.busy ? null : widget.onNext,
+                    focusNode: _actionFocus[1],
+                  ),
+                  _button(
+                    widget.danmakuEnabled ? '弹幕开' : '弹幕关',
+                    Icons.subtitles_outlined,
+                    widget.onToggleDanmaku,
+                    focusNode: _actionFocus[2],
+                  ),
+                  _button(
+                    '弹幕匹配',
+                    Icons.manage_search_rounded,
+                    () => unawaited(_openPanel(widget.onDanmakuSources)),
+                    focusNode: _actionFocus[3],
+                  ),
+                  _button(
+                    '弹幕设置',
+                    Icons.tune_rounded,
+                    () => unawaited(_openPanel(widget.onDanmakuSettings)),
+                    focusNode: _actionFocus[4],
+                  ),
+                  _button(
+                    '播放信息',
+                    Icons.info_outline_rounded,
+                    () => unawaited(_openPanel(widget.onDetails)),
+                    focusNode: _actionFocus[5],
+                  ),
+                ],
               ),
             ],
           ),

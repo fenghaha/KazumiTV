@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kazumi/modules/roads/road_module.dart';
 import 'package:kazumi/tv/player/tv_episode_picker.dart';
 import 'package:kazumi/tv/player/tv_player_controls.dart';
+import 'package:kazumi/tv/settings/tv_slider_tile.dart';
 
 void main() {
   late FocusNode playbackFocus;
@@ -369,7 +370,10 @@ void main() {
       expect(seeks.length, 1);
       await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
-      expect(find.text('上下换项 · 获焦后左右调节'), findsOneWidget);
+      expect(
+        tester.state<TvSliderTileState>(find.byType(TvSliderTile)).isFocused,
+        isFalse,
+      );
       expect(
         FocusManager.instance.primaryFocus?.debugLabel,
         'TV slider navigation anchor',
