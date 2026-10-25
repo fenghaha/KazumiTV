@@ -153,11 +153,19 @@ void main() {
               .first;
           Focus.of(tester.element(target)).requestFocus();
           await tester.pumpAndSettle();
-          await tester.sendKeyEvent(LogicalKeyboardKey.select);
-          await tester.pumpAndSettle();
           await tester.binding.handlePopRoute();
           await tester.pumpAndSettle();
-          expect(find.text('按确认调节 · 上下换项'), findsOneWidget);
+          expect(find.text('上下换项 · 获焦后左右调节'), findsOneWidget);
+          expect(
+            FocusManager.instance.primaryFocus?.debugLabel,
+            'TV slider navigation anchor',
+          );
+          await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+          await tester.pumpAndSettle();
+          expect(
+            FocusManager.instance.primaryFocus?.debugLabel,
+            'TV playback toggle',
+          );
           expect(find.text('暂停'), findsOneWidget);
           expect(find.text('再按一次返回退出播放'), findsNothing);
           await tester.pump(const Duration(milliseconds: 400));

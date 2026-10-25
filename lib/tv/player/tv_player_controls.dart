@@ -164,8 +164,8 @@ class _TvPlayerControlsState extends State<TvPlayerControls> {
 
   bool _backWithinPlayer() {
     if (_modalOpen) return true;
-    if (_seekControl.currentState?.isEditing == true) {
-      _seekControl.currentState!.finishEditing();
+    if (_seekControl.currentState?.isFocused == true) {
+      _seekControl.currentState!.blur();
       return true;
     } else if (_visible) {
       _hideControls();
@@ -256,7 +256,7 @@ class _TvPlayerControlsState extends State<TvPlayerControls> {
         return KeyEventResult.handled;
       }
     }
-    // Other controls retain normal vertical traversal and slider editing.
+    // Other controls retain normal vertical traversal and focused adjustment.
     if (_visible) return KeyEventResult.ignored;
     if (key == LogicalKeyboardKey.arrowLeft ||
         key == LogicalKeyboardKey.mediaRewind) {
@@ -423,6 +423,7 @@ class _TvPlayerControlsState extends State<TvPlayerControls> {
                           Expanded(
                             child: TvSliderTile(
                               key: _seekControl,
+                              parentHandlesBack: true,
                               title: const Text('播放进度'),
                               valueLabel: _time(widget.position),
                               value: widget.position.inMilliseconds

@@ -46,7 +46,7 @@ class _PlayerFixtureState extends State<_PlayerFixture> {
 
 void main() {
   testWidgets(
-    'real settings outlet returns focus before exiting and slider Back only ends editing',
+    'real settings outlet returns focus before exiting and slider Back only blurs',
     (tester) async {
       final preview = Platform.environment['TV_SETTINGS_PREVIEW'];
       final previewKey = GlobalKey();
@@ -158,15 +158,23 @@ void main() {
         FocusManager.instance.primaryFocus?.debugLabel,
         'TV adjustable setting',
       );
-      await tester.sendKeyEvent(LogicalKeyboardKey.select);
+      expect(find.text('左右调节 · 上下换项 · 返回取消焦点'), findsOneWidget);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
       await tester.pumpAndSettle();
-      expect(find.text('左右调节 · 确认或返回结束 · 上下换项'), findsOneWidget);
+      expect(find.text('1.1'), findsOneWidget);
       await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
-      expect(find.text('按确认调节 · 上下换项'), findsOneWidget);
+      expect(find.text('上下换项 · 获焦后左右调节'), findsOneWidget);
       expect(
         FocusManager.instance.primaryFocus?.debugLabel,
-        'TV adjustable setting',
+        'TV slider navigation anchor',
+      );
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.pumpAndSettle();
+      expect(
+        FocusManager.instance.primaryFocus?.context
+            ?.findAncestorWidgetOfExactType<TvFocusable>()?.child,
+        isA<Text>().having((text) => text.data, 'label', '播放最后项'),
       );
       await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
