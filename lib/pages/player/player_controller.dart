@@ -168,6 +168,7 @@ class PlayerController implements Disposable {
       return false;
     }
     final initialization = _initializations.begin();
+    danmaku.cancelPendingDanmakuLoad();
 
     videoUrl = params.videoUrl;
     isLocalPlayback = params.isLocalPlayback;
@@ -339,6 +340,7 @@ class PlayerController implements Disposable {
   Future<void> pause({bool enableSync = true}) async {
     final player = playback.mediaPlayer;
     if (player == null) return;
+    danmaku.invalidateScheduledDanmakus();
     danmaku.canvasController.pause();
     try {
       await player.pause();
@@ -387,6 +389,7 @@ class PlayerController implements Disposable {
     if (_shutdownFuture != null) {
       return;
     }
+    danmaku.dispose();
     screenshots.dispose();
     final shutdown = _shutdownResources();
     _shutdownFuture = shutdown;
@@ -433,6 +436,7 @@ class PlayerController implements Disposable {
 
   Future<void> stop() async {
     _initializations.cancel();
+    danmaku.cancelPendingDanmakuLoad();
     await _releasePlaybackResources();
   }
 

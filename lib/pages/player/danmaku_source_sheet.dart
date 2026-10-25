@@ -21,6 +21,7 @@ import 'package:kazumi/pages/player/controller/player_danmaku_controller.dart';
 import 'package:kazumi/request/apis/danmaku_api.dart';
 import 'package:kazumi/services/logging/logger.dart';
 import 'package:kazumi/services/storage/storage.dart';
+import 'package:kazumi/utils/async_session.dart';
 
 const _episodeToolThreshold = 25;
 const _episodeSegmentSize = 100;
@@ -115,6 +116,7 @@ class _DanmakuSourceSheetState extends State<_DanmakuSourceSheet> {
   String? _error;
   bool _loading = false;
   bool _hasMore = false;
+  final AsyncSessionOwner _requests = AsyncSessionOwner();
 
   @override
   void initState() {
@@ -124,6 +126,7 @@ class _DanmakuSourceSheetState extends State<_DanmakuSourceSheet> {
 
   @override
   void dispose() {
+    _requests.close();
     _keywordController.dispose();
     _episodeSearchController.dispose();
     _episodeJumpController.dispose();
@@ -139,6 +142,7 @@ class _DanmakuSourceSheetState extends State<_DanmakuSourceSheet> {
     }
 
     final recordSearch = !GStorage.getSetting(SettingsKeys.privateMode);
+    final request = _requests.begin();
     setState(() {
       _loading = true;
       _error = null;
@@ -161,7 +165,7 @@ class _DanmakuSourceSheetState extends State<_DanmakuSourceSheet> {
     }
     try {
       final response = await DanmakuApi.searchAnimes(keyword);
-      if (!mounted) return;
+      if (!mounted || request.isStale) return;
       setState(() {
         _loading = false;
         _animes = response.animes;
@@ -170,7 +174,7 @@ class _DanmakuSourceSheetState extends State<_DanmakuSourceSheet> {
       });
     } catch (error) {
       KazumiLogger().w('Danmaku source search failed', error: error);
-      if (!mounted) return;
+      if (!mounted || request.isStale) return;
       setState(() {
         _loading = false;
         _error = '搜索失败';
@@ -179,6 +183,7 @@ class _DanmakuSourceSheetState extends State<_DanmakuSourceSheet> {
   }
 
   Future<void> _selectAnime(DanmakuSearchAnime anime) async {
+    final request = _requests.begin();
     setState(() {
       _loading = true;
       _error = null;
@@ -192,7 +197,7 @@ class _DanmakuSourceSheetState extends State<_DanmakuSourceSheet> {
     try {
       final response =
           await DanmakuApi.getDanDanEpisodesByDanDanBangumiID(anime.animeId);
-      if (!mounted) return;
+      if (!mounted || request.isStale) return;
       setState(() {
         _loading = false;
         _episodes = response.episodes;
@@ -200,7 +205,7 @@ class _DanmakuSourceSheetState extends State<_DanmakuSourceSheet> {
       });
     } catch (error) {
       KazumiLogger().w('Danmaku episode list failed to load', error: error);
-      if (!mounted) return;
+      if (!mounted || request.isStale) return;
       setState(() {
         _loading = false;
         _error = '分集加载失败';
@@ -209,19 +214,24 @@ class _DanmakuSourceSheetState extends State<_DanmakuSourceSheet> {
   }
 
   Future<void> _selectEpisode(DanmakuEpisode episode) async {
+    final request = _requests.begin();
     setState(() => _loading = true);
     try {
       widget.onBeforeApply();
       final hasDanmakus = await widget.danmakuController
-          .getDanDanmakuByEpisodeID(episode.episodeId);
-      if (!mounted) return;
-      widget.danmakuController.setDanmakuEnabled(hasDanmakus);
+          .loadManualDanmaku(episode.episodeId,
+              canApply: () => mounted && request.isActive);
+      if (!mounted || request.isStale) return;
+      if (hasDanmakus == null) {
+        setState(() => _loading = false);
+        return;
+      }
       KazumiDialog.dismiss(context: context);
       KazumiDialog.showToast(
         message: hasDanmakus ? '已切换弹幕源' : '暂无弹幕',
       );
     } catch (_) {
-      if (!mounted) return;
+      if (!mounted || request.isStale) return;
       setState(() => _loading = false);
       KazumiDialog.showToast(message: '弹幕源切换失败');
     }
@@ -288,7 +298,9 @@ class _DanmakuSourceSheetState extends State<_DanmakuSourceSheet> {
   }
 
   void _goBack() {
+    _requests.cancel();
     setState(() {
+      _loading = false;
       _error = null;
       _step =
           _step == _SourceStep.episode ? _SourceStep.anime : _SourceStep.search;

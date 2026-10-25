@@ -8,6 +8,7 @@ import 'package:kazumi/services/logging/logger.dart';
 import 'package:kazumi/services/storage/storage.dart';
 import 'package:mobx/mobx.dart';
 import 'package:kazumi/utils/danmaku.dart';
+import 'package:kazumi/utils/async_session.dart';
 
 part 'player_danmaku_controller.g.dart';
 
@@ -92,7 +93,11 @@ abstract class _PlayerDanmakuController with Store {
   final bool Function() isLocalPlayback;
   final DownloadController downloadController;
 
-  late canvas.DanmakuController canvasController;
+  canvas.DanmakuController? _canvasController;
+
+  canvas.DanmakuController get canvasController => _canvasController!;
+  set canvasController(canvas.DanmakuController value) =>
+      _canvasController = value;
 
   final Map<int, List<DanmakuEntry>> danDanmakus = {};
   @observable
@@ -102,6 +107,8 @@ abstract class _PlayerDanmakuController with Store {
 
   int bangumiID = 0;
   int _scheduledDanmakuGeneration = 0;
+  int? _lastDispatchedSecond;
+  final AsyncSessionOwner _manualLoads = AsyncSessionOwner();
 
   int get scheduledDanmakuGeneration => _scheduledDanmakuGeneration;
 
@@ -125,14 +132,61 @@ abstract class _PlayerDanmakuController with Store {
     return danDanmakus[danmakuSecond] ?? const [];
   }
 
+  /// A timer tick is not proof that playback advanced. Seek/load/offset changes
+  /// reset this cursor explicitly; repeated or jittering position reports do not.
+  List<DanmakuEntry> takeDanmakusForPlaybackPosition(Duration playbackPosition) {
+    final second = resolveDanmakuSecond(playbackPosition);
+    if (second == null ||
+        (_lastDispatchedSecond != null && second <= _lastDispatchedSecond!)) {
+      return const [];
+    }
+    final previous = _lastDispatchedSecond;
+    _lastDispatchedSecond = second;
+    // Cover short gaps caused by timer jitter or playback speed. Large jumps
+    // start at the new position rather than flooding the screen with history.
+    if (previous != null && second - previous <= 5) {
+      return [
+        for (var bucket = previous + 1; bucket <= second; bucket++)
+          ...?danDanmakus[bucket],
+      ];
+    }
+    return danDanmakus[second] ?? const [];
+  }
+
   @action
   void setDanmakuEnabled(bool value) {
+    if (danmakuOn != value) {
+      clearAndInvalidateScheduledDanmakus();
+    }
     danmakuOn = value;
   }
 
   void clearAndInvalidateScheduledDanmakus() {
+    invalidateScheduledDanmakus();
+    _lastDispatchedSecond = null;
+    _canvasController?.clear();
+  }
+
+  /// Pause/buffering cancels pending emissions without replaying a claimed
+  /// second or clearing the already visible, paused canvas.
+  void invalidateScheduledDanmakus() {
     _scheduledDanmakuGeneration++;
-    canvasController.clear();
+  }
+
+  /// Called synchronously before native stop/disposal can yield to a late load.
+  void cancelPendingDanmakuLoad() {
+    _manualLoads.cancel();
+    clearAndInvalidateScheduledDanmakus();
+    danDanmakus.clear();
+    runInAction(() {
+      danmakuLoading = false;
+      danmakuOn = false;
+    });
+  }
+
+  void dispose() {
+    cancelPendingDanmakuLoad();
+    _manualLoads.close();
   }
 
   // Apply fetched data only after VideoPageController validates the session.
@@ -156,6 +210,8 @@ abstract class _PlayerDanmakuController with Store {
 
   @action
   void beginDanmakuLoad() {
+    _manualLoads.cancel();
+    clearAndInvalidateScheduledDanmakus();
     danDanmakus.clear();
     danmakuLoading = true;
   }
@@ -173,6 +229,7 @@ abstract class _PlayerDanmakuController with Store {
 
   @action
   void applyUnavailableDanmakuLoad(DanmakuLoadResult result) {
+    cancelPendingDanmakuLoad();
     bangumiID = result.bangumiID;
     danDanmakus.clear();
     danmakuOn = false;
@@ -182,8 +239,7 @@ abstract class _PlayerDanmakuController with Store {
   @action
   void finishDanmakuLoad({bool disableDanmaku = false}) {
     if (disableDanmaku) {
-      danDanmakus.clear();
-      danmakuOn = false;
+      cancelPendingDanmakuLoad();
     }
     danmakuLoading = false;
   }
@@ -295,23 +351,40 @@ abstract class _PlayerDanmakuController with Store {
   }
 
   @action
-  Future<bool> getDanDanmakuByEpisodeID(int episodeID) async {
+  Future<bool> getDanDanmakuByEpisodeID(int episodeID) async =>
+      await loadManualDanmaku(episodeID) ?? false;
+
+  /// Null means superseded/dismissed, so the caller must not change UI state.
+  Future<bool?> loadManualDanmaku(
+    int episodeID, {
+    bool Function()? canApply,
+  }) async {
+    if (_manualLoads.isClosed) return null;
     KazumiLogger().i('PlayerController: attempting to get danmaku $episodeID');
-    danmakuLoading = true;
+    beginDanmakuLoad();
+    final request = _manualLoads.begin();
     try {
-      danDanmakus.clear();
-      var res = await DanmakuApi.getDanDanmakuByEpisodeID(episodeID);
-      addDanmakus(res);
+      final res = await DanmakuApi.getDanDanmakuByEpisodeID(episodeID);
+      if (request.isStale || !(canApply?.call() ?? true)) return null;
+      runInAction(() {
+        addDanmakus(res);
+        setDanmakuEnabled(res.isNotEmpty);
+      });
       return res.isNotEmpty;
     } catch (e) {
+      if (request.isStale || !(canApply?.call() ?? true)) return null;
       KazumiLogger().w('PlayerController: failed to get danmaku', error: e);
       rethrow;
     } finally {
-      danmakuLoading = false;
+      if (request.isActive) {
+        runInAction(() => danmakuLoading = false);
+      }
     }
   }
 
   void addDanmakus(List<DanmakuEntry> danmakus) {
+    clearAndInvalidateScheduledDanmakus();
+    danDanmakus.clear();
     final bool danmakuDeduplicationEnable =
         GStorage.getSetting(SettingsKeys.danmakuDeduplication);
 

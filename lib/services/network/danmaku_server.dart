@@ -59,9 +59,31 @@ class DanmakuServer {
   }
 
   static String sourceLabel(String source) {
-    final lower = source.toLowerCase();
-    if (lower.contains('bilibili')) return 'BiliBili';
-    if (lower.contains('bahamut') || lower.contains('gamer')) return 'Gamer';
-    return source;
+    final tag = RegExp(r'\[([^\]]+)\]$').firstMatch(source)?.group(1) ?? source;
+    final labels = tag.split(RegExp('[&＆]')).map((part) {
+      final lower = part.trim().toLowerCase();
+      if (lower.contains('bilibili')) return 'BiliBili';
+      if (lower.contains('bahamut') || lower.contains('gamer')) return 'Gamer';
+      return part.trim();
+    }).toSet();
+    if (labels.length == 1 &&
+        !labels.contains('BiliBili') &&
+        !labels.contains('Gamer')) {
+      return source;
+    }
+    return labels.join('＆');
   }
+
+  /// A merged comment is visible if any participating source is enabled. It is
+  /// still emitted once; source labels must not expand it into several entries.
+  static bool isSourceEnabled(
+    String source, {
+    required bool bilibili,
+    required bool gamer,
+    required bool dandan,
+  }) => sourceLabel(source).split(RegExp('[&＆]')).any((label) {
+    if (label == 'BiliBili') return bilibili;
+    if (label == 'Gamer') return gamer;
+    return dandan;
+  });
 }

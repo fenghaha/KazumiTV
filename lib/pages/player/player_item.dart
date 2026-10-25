@@ -27,6 +27,7 @@ import 'package:kazumi/pages/video/video_controller.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:canvas_danmaku/canvas_danmaku.dart';
 import 'package:kazumi/tv/player/tv_danmaku_trace.dart';
+import 'package:kazumi/services/network/danmaku_server.dart';
 import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:kazumi/pages/player/video_details_sheet.dart';
 import 'package:screen_brightness_platform_interface/screen_brightness_platform_interface.dart';
@@ -1106,18 +1107,12 @@ class _PlayerItemState extends State<PlayerItem>
   }
 
   bool _isDanmakuSourceEnabled(DanmakuEntry danmaku) {
-    if (!_danmakuBiliBiliSource && danmaku.source.contains('BiliBili')) {
-      return false;
-    }
-    if (!_danmakuGamerSource && danmaku.source.contains('Gamer')) {
-      return false;
-    }
-    if (!_danmakuDanDanSource &&
-        !(danmaku.source.contains('BiliBili') ||
-            danmaku.source.contains('Gamer'))) {
-      return false;
-    }
-    return true;
+    return DanmakuServer.isSourceEnabled(
+      danmaku.source,
+      bilibili: _danmakuBiliBiliSource,
+      gamer: _danmakuGamerSource,
+      dandan: _danmakuDanDanSource,
+    );
   }
 
   DanmakuItemType _danmakuItemType(DanmakuEntry danmaku) {
@@ -1131,14 +1126,15 @@ class _PlayerItemState extends State<PlayerItem>
   }
 
   void _emitDanmakusForCurrentPosition() {
-    if (playerController.playback.currentPosition.inMicroseconds == 0 ||
-        playerController.playback.playerPlaying != true ||
+    if (playerController.playback.playerPlaying != true ||
+        playerController.playback.playerBuffering ||
         playerController.danmaku.danmakuOn != true) {
+      playerController.danmaku.invalidateScheduledDanmakus();
       return;
     }
 
     final danmakus = playerController.danmaku
-        .danmakusForPlaybackPosition(playerController.playback.currentPosition);
+        .takeDanmakusForPlaybackPosition(playerController.playback.currentPosition);
     final danmakuCount = danmakus.length;
     for (final entry in danmakus.asMap().entries) {
       final idx = entry.key;
@@ -1368,6 +1364,7 @@ class _PlayerItemState extends State<PlayerItem>
     WidgetsBinding.instance.removeObserver(this);
     windowManager.removeListener(this);
     playerController.seeking.invalidateInteractiveSeek();
+    playerController.danmaku.clearAndInvalidateScheduledDanmakus();
     playerTimer?.cancel();
     hideTimer?.cancel();
     mouseScrollerTimer?.cancel();

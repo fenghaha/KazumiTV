@@ -24,6 +24,28 @@ void main() {
     expect(DanmakuServer.sourceLabel('user[bahamut]'), 'Gamer');
     expect(DanmakuServer.sourceLabel('[other]'), '[other]');
   });
+  test('merged source tags retain every participant and use any-enabled semantics', () {
+    expect(DanmakuServer.sourceLabel('[bahamut＆dandan＆bilibili]'),
+        'Gamer＆dandan＆BiliBili');
+    for (final tag in ['[bahamut&dandan]', 'user[bahamut＆dandan]']) {
+      expect(DanmakuServer.sourceLabel(tag), 'Gamer＆dandan');
+      expect(DanmakuServer.isSourceEnabled(tag,
+          bilibili: false, gamer: false, dandan: true), isTrue);
+      expect(DanmakuServer.isSourceEnabled(tag,
+          bilibili: false, gamer: true, dandan: false), isTrue);
+      expect(DanmakuServer.isSourceEnabled(tag,
+          bilibili: true, gamer: false, dandan: false), isFalse);
+    }
+    for (var mask = 0; mask < 8; mask++) {
+      expect(DanmakuServer.isSourceEnabled('[bilibili＆bahamut＆dandan]',
+          bilibili: mask & 1 != 0, gamer: mask & 2 != 0, dandan: mask & 4 != 0),
+          mask != 0);
+    }
+    expect(DanmakuServer.isSourceEnabled('BiliBili',
+        bilibili: false, gamer: true, dandan: true), isFalse);
+    expect(DanmakuServer.isSourceEnabled('[other]',
+        bilibili: true, gamer: true, dandan: false), isFalse);
+  });
   test('blank preserves the official endpoint; custom prefixes survive', () {
     expect(DanmakuServer.normalizeBase(''), DanmakuServer.officialBase);
     expect(
