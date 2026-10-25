@@ -18,8 +18,13 @@ class TvSliderTile extends StatefulWidget {
     this.description,
     this.enabled = true,
     this.parentHandlesBack = false,
+    this.compact = false,
+    this.semanticLabel,
   });
   final bool enabled;
+  /// A bare, full-width track for the playback overlay, without settings copy.
+  final bool compact;
+  final String? semanticLabel;
   /// The player owns remote/system Back and calls [TvSliderTileState.blur].
   final bool parentHandlesBack;
   final Widget title;
@@ -131,6 +136,40 @@ class TvSliderTileState extends State<TvSliderTile> {
     return KeyEventResult.ignored;
   }
 
+  Widget _track(BuildContext context) {
+    final slider = Slider(
+      value: widget.value,
+      min: widget.min,
+      max: widget.max,
+      divisions: widget.divisions,
+      onChangeStart: widget.enabled ? (_) => _focus.requestFocus() : null,
+      onChanged: widget.enabled ? widget.onChanged : null,
+    );
+    return ExcludeFocus(
+      child: widget.compact
+          ? SizedBox(
+              width: double.infinity,
+              height: 32,
+              child: SliderTheme(
+                data: SliderTheme.of(context).copyWith(
+                  trackHeight: _focused ? 4 : 3,
+                  trackShape: const RoundedRectSliderTrackShape(),
+                  activeTrackColor: _focused ? TvTheme.focus : Colors.white,
+                  inactiveTrackColor: const Color(0x66FFFFFF),
+                  thumbColor: _focused ? TvTheme.focus : Colors.white,
+                  thumbShape: RoundSliderThumbShape(
+                    enabledThumbRadius: _focused ? 6 : 4,
+                  ),
+                  overlayShape: SliderComponentShape.noOverlay,
+                  showValueIndicator: ShowValueIndicator.never,
+                ),
+                child: slider,
+              ),
+            )
+          : slider,
+    );
+  }
+
   @override
   Widget build(BuildContext context) => PopScope(
     // Settings/player routes consume Back themselves. Only standalone sheets
@@ -147,8 +186,15 @@ class TvSliderTileState extends State<TvSliderTile> {
         focusableWhenDisabled: true,
         onPressed: widget.enabled ? _focus.requestFocus : null,
         onFocusChange: _onFocusChange,
-        padding: const EdgeInsets.all(16),
-        child: Column(
+        semanticLabel: widget.semanticLabel,
+        focusedColor: widget.compact
+            ? Colors.transparent
+            : const Color(0xFF31455D),
+        focusBorderColor: widget.compact ? Colors.transparent : TvTheme.focus,
+        padding: widget.compact
+            ? const EdgeInsets.symmetric(horizontal: 4)
+            : const EdgeInsets.all(16),
+        child: widget.compact ? _track(context) : Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Row(
@@ -170,18 +216,7 @@ class TvSliderTileState extends State<TvSliderTile> {
               ],
             ),
             if (widget.description != null) widget.description!,
-            ExcludeFocus(
-              child: Slider(
-                value: widget.value,
-                min: widget.min,
-                max: widget.max,
-                divisions: widget.divisions,
-                onChangeStart: widget.enabled
-                    ? (_) => _focus.requestFocus()
-                    : null,
-                onChanged: widget.enabled ? widget.onChanged : null,
-              ),
-            ),
+            _track(context),
             Text(
               _focused ? '左右调节 · 上下换项 · 返回取消焦点' : '上下换项 · 获焦后左右调节',
               style: TextStyle(

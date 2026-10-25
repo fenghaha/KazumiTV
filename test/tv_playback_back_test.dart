@@ -155,7 +155,10 @@ void main() {
           await tester.pumpAndSettle();
           await tester.binding.handlePopRoute();
           await tester.pumpAndSettle();
-          expect(find.text('上下换项 · 获焦后左右调节'), findsOneWidget);
+          expect(
+            tester.state<TvSliderTileState>(find.byType(TvSliderTile)).isFocused,
+            isFalse,
+          );
           expect(
             FocusManager.instance.primaryFocus?.debugLabel,
             'TV slider navigation anchor',

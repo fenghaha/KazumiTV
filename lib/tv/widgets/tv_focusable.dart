@@ -17,6 +17,8 @@ class TvFocusable extends StatefulWidget {
     this.selected = false,
     this.semanticLabel,
     this.focusableWhenDisabled = false,
+    this.focusedColor = const Color(0xFF31455D),
+    this.focusBorderColor = const Color(0xFFEBC889),
   });
 
   final Widget child;
@@ -32,6 +34,8 @@ class TvFocusable extends StatefulWidget {
   /// Retain a remote navigation target while its action is temporarily busy.
   /// A null callback still blocks activation and exposes disabled semantics.
   final bool focusableWhenDisabled;
+  final Color focusedColor;
+  final Color focusBorderColor;
 
   @override
   State<TvFocusable> createState() => _TvFocusableState();
@@ -98,14 +102,14 @@ class _TvFocusableState extends State<TvFocusable> {
               padding: widget.padding,
               decoration: BoxDecoration(
                 color: _focused
-                    ? const Color(0xFF31455D)
+                    ? widget.focusedColor
                     : widget.selected
                     ? const Color(0xFF263A51)
                     : Colors.transparent,
                 borderRadius: widget.borderRadius,
                 border: Border.all(
                   color: _focused
-                      ? const Color(0xFFEBC889)
+                      ? widget.focusBorderColor
                       : Colors.transparent,
                   width: 3,
                 ),
