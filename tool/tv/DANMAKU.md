@@ -1,5 +1,7 @@
 # 可选自建弹幕适配（2026-10-24）
 
+**2026-10-25 r5.6整合交付补充**：本专题完成的客户端/UI改动已纳入固定整合运行代码 `29ae9ee6`，342项整合回归通过，ARM64 generic和ARM32 xgimi-z9x正式包已同签名覆盖到海信/极米并回读哈希。安装后未启动应用或进行遥控/播放验收，由用户亲测；本页旧“未编译安装”是相应旧阶段，不代表r5.6现状。完整包清单与设备回执见主工程 `build/releases/r5.6-integrated-29ae9ee6/`，设备体验以KnowledgeHub后续记录为准。
+
 用户实测多个番剧弹幕全部失败；当前个人构建没有官方弹弹play AppId/Key，
 用空凭据实测 API 返回 403、`X-Error-Message: Missing Authentication Headers`，
 Swagger 页面 200。BiliBili/Gamer 开关原来只是筛选官方接口聚合结果，不是独立抓取。
