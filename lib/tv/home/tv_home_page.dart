@@ -7,6 +7,7 @@ import 'package:kazumi/bean/card/network_img_layer.dart';
 import 'package:kazumi/modules/bangumi/bangumi_item.dart';
 import 'package:kazumi/modules/collect/collect_type.dart';
 import 'package:kazumi/modules/history/history_module.dart';
+import 'package:kazumi/navigation.dart';
 import 'package:kazumi/services/player/history_playback_service.dart';
 import 'package:kazumi/services/plugin/rule_engine_models.dart'
     show RuleCancelToken;
@@ -44,7 +45,7 @@ class TvHomePage extends StatefulWidget {
   State<TvHomePage> createState() => _TvHomePageState();
 }
 
-class _TvHomePageState extends State<TvHomePage> {
+class _TvHomePageState extends State<TvHomePage> with RouteAware {
   late final TvHomeData _data = widget.data ?? UpstreamTvHomeData();
   final _searchInput = TextEditingController();
   final _contentFocus = GlobalKey<TvScrollBoundaryState>();
@@ -56,6 +57,9 @@ class _TvHomePageState extends State<TvHomePage> {
   bool _openingHistory = false;
   RuleCancelToken? _resumeToken;
   double _posterWidth = 150;
+  PageRoute<void>? _route;
+  bool _covered = false;
+  bool _refreshPending = false;
   late final TvPlaybackBackController _exitGuard = TvPlaybackBackController(
     exit: () {
       unawaited(SystemNavigator.pop().whenComplete(_exitGuard.exitCancelled));
@@ -124,12 +128,45 @@ class _TvHomePageState extends State<TvHomePage> {
     }
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route is PageRoute<void> && !identical(route, _route)) {
+      rootRouteObserver.unsubscribe(this);
+      _route = route;
+      _covered = !route.isCurrent;
+      rootRouteObserver.subscribe(this, route);
+    }
+  }
+
+  @override
+  void didPushNext() => _covered = true;
+
+  @override
+  void didPopNext() {
+    _covered = false;
+    if (_refreshPending && mounted) {
+      _refreshPending = false;
+      setState(() {});
+    }
+  }
+
   void _onData() {
-    if (mounted) setState(() {});
+    if (!mounted) return;
+    // History still persists every second while a player covers this page.
+    // Keep its widgets/focus/scroll alive and refresh the view once on return.
+    if (_covered) {
+      _refreshPending = true;
+      return;
+    }
+    _refreshPending = false;
+    setState(() {});
   }
 
   @override
   void dispose() {
+    rootRouteObserver.unsubscribe(this);
     FocusManager.instance.removeEarlyKeyEventHandler(_homeKey);
     _exitGuard.dispose();
     _resumeToken?.cancel();
