@@ -2,6 +2,14 @@
 
 以 [Predidit/Kazumi](https://github.com/Predidit/Kazumi) 原版为基础的个人电视分支，面向海信电视与极米 Z9X 投影仪。大海报、分行浏览、可见的遥控焦点、原生 Android 输入法和可选手机扫码输入。旧 Carey-L/Kazumi-TV 与 Muse 补丁仅供历史参考，不是此仓库的父分支。
 
+## r5.6.1 海信网络起播预缓冲（2026-10-25）
+
+用户已确认r5.6海信功能正常、弹幕较流畅，保留现有输出与绘制。针对刚进入时播放/缓冲反复切换，新增显式构建档 `hisense-mt9655`：仅Android TV的网络播放在 `player.open` 前设置原生 `cache-pause=yes`、`cache-pause-wait=10`、`cache-pause-initial=yes`，先积累约10秒媒体内容再放行。不是固定等待10秒，也不修改用户pause/autoPlay、源/HTTPS/解码、缓存字节上限或前向预读窗口。generic、xgimi-z9x、其他平台及本地下载播放保持原行为。
+
+mpv同一规则也适用于seek后缓存不足及断流后的重新缓冲；已有目标缓存时可直接播放，接近EOF或触及缓存上限时由内核提前放行。读取速度长期不足时仍可能卡顿；此设置不等于修复全部起播/续播初始化问题。海信构建用 `KAZUMI_TV_DEVICE_PROFILE=hisense-mt9655 tool/tv/build.sh --target-platform android-arm64`，仍保留原私有签名和默认弹幕defines；极米已由用户安排关机，本次不操作或更新它。
+
+原生选项语义见[mpv缓存说明](https://mpv.io/manual/stable/#options-cache-pause-initial)。实机结果由用户后续验收；离线测试/构建不冒充起播体验通过。
+
 ## r5.6 整合交付（2026-10-25）
 
 固定运行代码 `29ae9ee656db0410613e34a6483521b7fec375a7` 已整合推荐轮播、紧凑播放栏/进度焦点/弹幕分组、弹幕重复投放与旧源回调保护，以及后台电视首页刷新合并。342 项整合回归、上游契约通过，分析 0 error / 0 warning、18 条既有 info。

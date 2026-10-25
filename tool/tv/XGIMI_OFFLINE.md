@@ -71,3 +71,8 @@ python3 tool/tv/analyze_frame_stalls.py build/verification/pacing/controlled-b2-
 签名与既有r5.5相同，16KiB对齐检查通过，两个包的ARM32优化内核均保持既有固定SHA。为减少观看期间的数据传输，仅将小型清单/分析报告回传Mac，APK留构建机；设备上仍保留r5.5。整集体验结果等用户反馈，经过一集时长不等于授权自动接管。
 
 UBT曾对两份新测试做Dart格式化，已与正式提交逐字节核对一致。只包含这两文件的`offline-format-before-tested-commit`备份stash保留，不是待合入功能，不要直接套用到后续工作。
+
+
+## 2026-10-25 海信起播缓冲的独立范围
+
+新增明确的`hisense-mt9655`构建目标，仅网络播放使用mpv原生10秒起播/恢复缓冲门槛；它不调用usesXgimiTuning、不启用Z9X的60秒预读限制。generic与xgimi-z9x的行为保持，裸`hisense`仍作为未知目标拒绝。默认TV修订标签跟随本次r5.6.1，ABI仍由调用方显式选择，海信交付使用android-arm64。用户已确认海信r5.6弹幕较流畅，本次不继续改绘制；极米按用户要求关机，不能将离线视为故障而自动接管。

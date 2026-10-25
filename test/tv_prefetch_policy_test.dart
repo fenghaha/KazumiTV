@@ -19,7 +19,8 @@ void main() {
   );
 
   test('generic and unvalidated device profiles do not inherit Z9X tuning', () {
-    for (final profile in [TvDeviceProfile.generic, 'hisense', '', 'xgimi']) {
+    for (final profile in [TvDeviceProfile.generic,
+      TvDeviceProfile.hisenseMt9655, 'hisense', '', 'xgimi']) {
       expect(limit(profile, 1941639168), isNull, reason: profile);
     }
   });
