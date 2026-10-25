@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_modular/flutter_modular.dart';
-import 'package:kazumi/bean/card/network_img_layer.dart';
 import 'package:kazumi/modules/bangumi/bangumi_item.dart';
 import 'package:kazumi/modules/collect/collect_type.dart';
 import 'package:kazumi/modules/history/history_module.dart';
@@ -11,6 +10,7 @@ import 'package:kazumi/services/player/history_playback_service.dart';
 import 'package:kazumi/services/plugin/rule_engine_models.dart'
     show RuleCancelToken;
 import 'package:kazumi/tv/home/tv_home_data.dart';
+import 'package:kazumi/tv/home/tv_discovery_carousel.dart';
 import 'package:kazumi/tv/player/tv_playback_back.dart';
 import 'package:kazumi/tv/input/tv_text_input.dart';
 import 'package:kazumi/tv/widgets/tv_focusable.dart';
@@ -458,7 +458,11 @@ class _TvHomePageState extends State<TvHomePage> {
         : <BangumiItem>[];
     return _scroll([
       _heading('今晚看什么', subtitle: '发现故事，回到喜欢的世界'),
-      if (_data.popular.isNotEmpty) _hero(_data.popular.first),
+      if (_data.popular.isNotEmpty)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 24),
+          child: TvDiscoveryCarousel(items: _data.popular, onOpen: _open),
+        ),
       if (_data.histories.isNotEmpty)
         _historyShelf('接着看', _data.histories.take(12).toList()),
       if (_data.popularLoading && _data.popular.isEmpty) _loading('正在加载热门番剧'),
@@ -475,82 +479,6 @@ class _TvHomePageState extends State<TvHomePage> {
         _message(_data.calendarError, '可稍后在新番日历中重试。'),
     ]);
   }
-
-  Widget _hero(BangumiItem item) => Container(
-    margin: const EdgeInsets.only(bottom: 24),
-    height: 244,
-    clipBehavior: Clip.antiAlias,
-    decoration: BoxDecoration(
-      color: const Color(0xFF1C2C41),
-      borderRadius: BorderRadius.circular(18),
-    ),
-    child: Row(
-      children: [
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(26, 22, 22, 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  tvBangumiTitle(item),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 30,
-                    height: 1.2,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Expanded(
-                  child: Text(
-                    item.summary.isEmpty ? '看看这部番剧的故事、播放源和剧集。' : item.summary,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      height: 1.5,
-                      color: Color(0xFFAAB9CB),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                TvFocusable(
-                  onPressed: () => unawaited(_open(item)),
-                  selected: true,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 17,
-                    vertical: 9,
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.play_arrow_rounded),
-                      SizedBox(width: 6),
-                      Text(
-                        '查看番剧',
-                        style: TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        NetworkImgLayer(
-          src: item.images['large'] ?? item.images['common'],
-          width: 216,
-          height: 244,
-          borderRadius: BorderRadius.zero,
-        ),
-      ],
-    ),
-  );
 
   Widget _shelf(String title, List<BangumiItem> items) => Padding(
     padding: const EdgeInsets.only(bottom: 24),
