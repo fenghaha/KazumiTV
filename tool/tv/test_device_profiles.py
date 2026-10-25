@@ -10,7 +10,7 @@ BUILD = Path(__file__).resolve().parent / 'build.sh'
 
 
 class DeviceProfileBuildTests(unittest.TestCase):
-    def invoke(self, profile=None, revision=None):
+    def invoke(self, profile=None, revision=None, target='android-arm'):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             fake = root / 'flutter'
@@ -27,7 +27,7 @@ class DeviceProfileBuildTests(unittest.TestCase):
                 env['KAZUMI_TV_DEVICE_PROFILE'] = profile
             if revision is not None:
                 env['KAZUMI_TV_REVISION'] = revision
-            result = subprocess.run(['bash', str(BUILD), '--target-platform', 'android-arm'],
+            result = subprocess.run(['bash', str(BUILD), '--target-platform', target],
                                     env=env, capture_output=True, text=True)
             return result, json.loads(log.read_text()) if log.exists() else None
 
@@ -35,7 +35,13 @@ class DeviceProfileBuildTests(unittest.TestCase):
         result, args = self.invoke()
         self.assertEqual(result.returncode, 0)
         self.assertIn('--dart-define=KAZUMI_TV_DEVICE_PROFILE=generic', args)
-        self.assertIn('--dart-define=KAZUMI_TV_REVISION=r5.5.1-generic', args)
+        self.assertIn('--dart-define=KAZUMI_TV_REVISION=r5.6.1-generic', args)
+
+    def test_hisense_scope_keeps_the_requested_arm64_target(self):
+        result, args = self.invoke('hisense-mt9655', target='android-arm64')
+        self.assertEqual(result.returncode, 0)
+        self.assertIn('--dart-define=KAZUMI_TV_DEVICE_PROFILE=hisense-mt9655', args)
+        self.assertEqual(args[-2:], ['--target-platform', 'android-arm64'])
 
     def test_z9x_requires_explicit_target_and_keeps_the_requested_abi(self):
         result, args = self.invoke('xgimi-z9x')

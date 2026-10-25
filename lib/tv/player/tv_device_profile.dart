@@ -3,6 +3,7 @@
 abstract final class TvDeviceProfile {
   static const generic = 'generic';
   static const xgimiZ9x = 'xgimi-z9x';
+  static const hisenseMt9655 = 'hisense-mt9655';
   static const current = String.fromEnvironment(
     'KAZUMI_TV_DEVICE_PROFILE',
     defaultValue: generic,

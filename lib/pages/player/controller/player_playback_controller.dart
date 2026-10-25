@@ -13,6 +13,7 @@ import 'package:kazumi/tv/tv_mode.dart';
 import 'package:kazumi/tv/player/tv_prefetch_trial.dart';
 import 'package:kazumi/tv/player/tv_prefetch_policy.dart';
 import 'package:kazumi/tv/player/tv_device_profile.dart';
+import 'package:kazumi/tv/player/tv_startup_buffer_policy.dart';
 import 'package:kazumi/services/logging/logger.dart';
 import 'package:kazumi/services/network/proxy_utils.dart';
 import 'package:kazumi/services/network/system_proxy_service.dart';
@@ -476,6 +477,20 @@ abstract class _PlayerPlaybackController with Store {
         if (!isCurrentPlayer(player)) {
           return await _discardIfNotCurrent(candidate);
         }
+      }
+
+      final startupBuffer = TvStartupBufferPolicy.options(
+        androidTv: TvMode.enabled && Platform.isAndroid,
+        deviceProfile: TvDeviceProfile.current,
+        localPlayback: isLocalPlayback(),
+      );
+      if (startupBuffer.isNotEmpty) {
+        final configured = await TvStartupBufferPolicy.apply(
+          values: startupBuffer,
+          setProperty: (name, value) => pp.setProperty(name, value),
+          isCurrent: () => isCurrentPlayer(player),
+        );
+        if (!configured) return await _discardIfNotCurrent(candidate);
       }
 
       await player.open(
