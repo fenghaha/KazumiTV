@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kazumi/modules/bangumi/bangumi_item.dart';
 import 'package:kazumi/modules/collect/collect_module.dart';
 import 'package:kazumi/modules/history/history_module.dart';
+import 'package:kazumi/navigation.dart';
 import 'package:kazumi/tv/home/tv_home_data.dart';
 import 'package:kazumi/tv/home/tv_home_page.dart';
 import 'package:kazumi/tv/widgets/tv_focusable.dart';
@@ -96,6 +97,78 @@ void main() {
     ),
     home: child,
   );
+
+  testWidgets('covered home coalesces data changes and preserves focus/scroll', (
+    tester,
+  ) async {
+    await setTvSize(tester);
+    final data = _FixtureData();
+    addTearDown(data.dispose);
+    final navigator = GlobalKey<NavigatorState>();
+    await tester.pumpWidget(MaterialApp(
+      navigatorKey: navigator,
+      navigatorObservers: [rootRouteObserver],
+      home: TvHomePage(data: data),
+    ));
+    await tester.pumpAndSettle();
+    final home = tester.state(find.byType(TvHomePage));
+    final focus = FocusManager.instance.primaryFocus;
+    final vertical = find.descendant(
+      of: find.byKey(const PageStorageKey('discover')),
+      matching: find.byType(Scrollable),
+    ).first;
+    final position = tester.state<ScrollableState>(vertical).position;
+    position.jumpTo(80);
+    await tester.pumpAndSettle();
+    final originalOffset = position.pixels;
+    final page = navigator.currentState!.push<void>(MaterialPageRoute<void>(
+      builder: (_) => const Scaffold(body: Text('player page')),
+    ));
+    await tester.pumpAndSettle();
+    for (var index = 0; index < 3; index++) {
+      data.popular = [_item(1, 'new snapshot $index')];
+      data.notifyListeners();
+      await tester.pumpAndSettle();
+      expect(find.text('new snapshot $index', skipOffstage: false), findsNothing);
+    }
+    expect(data.popular.single.nameCn, 'new snapshot 2');
+    expect(tester.state(find.byType(TvHomePage, skipOffstage: false)), same(home));
+    expect(focus?.context?.mounted, isTrue);
+    navigator.currentState!.pop();
+    await tester.pumpAndSettle();
+    await page;
+    expect(find.text('new snapshot 2'), findsWidgets);
+    expect(tester.state(find.byType(TvHomePage)), same(home));
+    expect(position.pixels, originalOffset);
+    expect(FocusManager.instance.primaryFocus, same(focus));
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('a dialog does not suppress home data updates', (tester) async {
+    await setTvSize(tester);
+    final data = _FixtureData();
+    addTearDown(data.dispose);
+    final navigator = GlobalKey<NavigatorState>();
+    await tester.pumpWidget(MaterialApp(
+      navigatorKey: navigator,
+      navigatorObservers: [rootRouteObserver],
+      home: TvHomePage(data: data),
+    ));
+    await tester.pumpAndSettle();
+    final dialog = showDialog<void>(
+      context: navigator.currentContext!,
+      builder: (_) => const AlertDialog(content: Text('dialog')),
+    );
+    await tester.pumpAndSettle();
+    data.popular = [_item(1, 'updated under dialog')];
+    data.notifyListeners();
+    await tester.pumpAndSettle();
+    expect(find.text('updated under dialog', skipOffstage: false), findsWidgets);
+    navigator.currentState!.pop();
+    await tester.pumpAndSettle();
+    await dialog;
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
 
   for (final size in [const Size(960, 540), const Size(1280, 720)]) {
     testWidgets('Up restores the whole discovery header at ${size.width}', (
