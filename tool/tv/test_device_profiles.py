@@ -35,7 +35,7 @@ class DeviceProfileBuildTests(unittest.TestCase):
         result, args = self.invoke()
         self.assertEqual(result.returncode, 0)
         self.assertIn('--dart-define=KAZUMI_TV_DEVICE_PROFILE=generic', args)
-        self.assertIn('--dart-define=KAZUMI_TV_REVISION=r5.6.2-generic', args)
+        self.assertIn('--dart-define=KAZUMI_TV_REVISION=r5.7-generic', args)
 
     def test_hisense_scope_keeps_the_requested_arm64_target(self):
         result, args = self.invoke('hisense-mt9655', target='android-arm64')

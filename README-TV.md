@@ -1,5 +1,14 @@
 # KazumiTV
 
+## r5.7 / 上游 2.4.2 同步（2026-10-28）
+
+已将实际上游从 `db520261` 普通合入主开发分支 `codex/kazumitv`，更新到 `57d13399`，保留原上游与 TV 提交历史；上游版本为 `2.4.2+20402`、规则 API 9、Flutter 3.47.8。新增规则仓库 gh-proxy/ghfast/GitCode/直连选项，番剧、封面与规则 ECH 请求共用上游传输池；同时跟进 Linux 打包依赖、CI 和文档。
+
+唯一源码合并冲突位于 DioFactory：保留上游新的 ECH 接线，以及既有自建弹幕的独立非日志连接池和 reset 生命周期，不扩大可选扩展范围。新规则镜像设置沿用上游迁移逻辑，未设置时继承原镜像开关；TV 入口、真实遥控选择/取消、镜像请求改写和弹幕隔离另加回归。进度条修复、弹幕保护、显式海信/极米缓冲档和评审 ARM32 O2 内核均保留。
+
+固定候选 `6ee9bb32` 在 UBT 独立 Flutter 3.47.8 / Dart 3.13.7 下通过 366 项全量、38 项重点回归与 13 项脚本检查，静态分析 0 error/0 warning、18 条既有 info。Hisense ARM64 与 XGIMI ARM32 的 2.4.2/r5.7 正式包已编译并核原签名、ABI、内核与 16KiB ZIP 对齐；合入后运行代码与该候选相同，仅 README 更新状态，无需因合并重建。Mac/UBT 独立树的 `build/releases/r5.7-upstream242-6ee9bb32/` 保存两包与清单，实际路径及主线/GitHub 状态见 KnowledgeHub《KazumiTV-开发与设备验收》。设备尚未安装，自动回归不代表双机实机或外部镜像可达性验收。
+
+
 
 ## r5.6.2 通用进度调节修复（2026-10-28）
 
@@ -31,7 +40,7 @@ mpv同一规则也适用于seek后缓存不足及断流后的重新缓冲；已�
 
 - `lib/tv/` 保存独立电视展示层；数据和行为复用原版 controller、repository、规则引擎与播放器。原文件尽量只保留入口和展示切换；可选自建弹幕需要的四处明确扩展以 `tool/tv/upstream.json` 的精确哈希和理由单列，见 [弹幕接入说明](tool/tv/DANMAKU.md)。
 - **不伪造客户端版本，不提高规则 API 等级，不绕过规则兼容检查。** `pubspec.yaml` 版本、`ApiEndpoints`、规则 JSON、嗅探及播放数据模型均随上游。
-- `tool/tv/upstream.json` 记录已合入的真实上游提交、版本和 API；电视修订由 `KAZUMI_TV_REVISION` 单独表示。当前基线 `db5202611902fe67c449e0a53bc05c3a75b4e8b0`，Kazumi `2.4.1+20401`，API 9。
+- `tool/tv/upstream.json` 记录已合入的真实上游提交、版本和 API；电视修订由 `KAZUMI_TV_REVISION` 单独表示。当前基线 `57d13399df3f34641a1b3100822671e8c545cf30`，Kazumi `2.4.2+20402`，API 9。
 - Android TV 打包由 `android/tv.gradle` 与 flavor manifest 负责，仅 `KAZUMI_BUILD_TV=1` 时生效，原版无 flavor 构建入口保留。
 - 应用名称 **KazumiTV**，application ID `com.fenghaha.kazumitv`。首次安装为独立应用；不假定能覆盖不同签名的第三方 TV 包，不在安装前删除旧数据。
 - 不内置第三方播放源、媒体账号或弹弹凭据。Emby 桥接是独立工程，通过上游兼容规则接入。
@@ -127,7 +136,7 @@ GitHub TV workflow 执行契约、脚本、分析与 Flutter 回归，只生成 
 
 ## 构建
 
-使用 `pubspec.yaml` 要求的 Flutter SDK、JDK 17 与 Android SDK/NDK。Flutter 版本随上游更新，不在 TV 脚本另锁一份。当前本机开发，UBT 的独立 Flutter 3.47.7 环境用于 Linux 构建；不要覆盖 Muse 的旧 SDK/工作区。
+使用 `pubspec.yaml` 要求的 Flutter SDK、JDK 17 与 Android SDK/NDK。Flutter 版本随上游更新，不在 TV 脚本另锁一份。本次测试与 Android 构建在 UBT 独立 Flutter 3.47.8 环境完成；3.47.7 与旧环境保留给历史候选。每台开发机须按当前 pubspec 选择 SDK，不覆盖其他项目或 Agent 的 SDK/工作区。
 
 `tool/tv/build.sh` 默认使用单 Gradle worker、2 GiB JVM、Kotlin in-process 和非持久 daemon；显式 `GRADLE_OPTS` 可覆盖。测试与打包串行执行，避免共享 UBT 再次耗尽内存。
 
