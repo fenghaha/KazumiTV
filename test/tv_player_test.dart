@@ -58,7 +58,6 @@ void main() {
                   danmakuEnabled: true,
                   onTogglePlayback: () => toggles++,
                   onSeek: seeks.add,
-                  onSeekBy: seeks.add,
                   onEpisodes: () async {
                     episodeOpens++;
                   },
@@ -125,7 +124,9 @@ void main() {
     await tester.pump();
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
     await tester.pump();
-    expect(seeks, [const Duration(seconds: 10), const Duration(seconds: -10)]);
+    expect(seeks, isEmpty);
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(seeks, [const Duration(minutes: 3)]);
     await tester.sendKeyEvent(LogicalKeyboardKey.select);
     await tester.pumpAndSettle();
     expect(toggles, 1);
@@ -301,7 +302,6 @@ void main() {
                         danmakuEnabled: true,
                         onTogglePlayback: () {},
                         onSeek: seeks.add,
-                        onSeekBy: seeks.add,
                         onEpisodes: () async {},
                         onNext: () {},
                         onToggleDanmaku: () {},

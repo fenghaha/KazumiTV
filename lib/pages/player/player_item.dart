@@ -1403,16 +1403,17 @@ class _PlayerItemState extends State<PlayerItem>
   );
 
   Widget _buildTvControls() => TvPlayerControls(
+        key: ObjectKey(playerController.playback.mediaPlayer),
         playbackFocus: widget.keyboardFocus,
         title: videoPageController.title,
         playing: playerController.playback.playing,
         position: playerController.playback.currentPosition,
+        reportedPosition: playerController.playback.playerPosition,
         duration: playerController.playback.duration,
         danmakuEnabled: playerController.danmaku.danmakuOn,
         busy: videoPageController.loading || playerController.playback.loading,
         onTogglePlayback: () => playerController.playOrPause(),
         onSeek: (position) => playerController.seek(position),
-        onSeekBy: (offset) => playerController.seekBy(offset),
         onEpisodes: _showTvEpisodes,
         onNext: () => handlePreNextEpisode('next'),
         onToggleDanmaku: handleDanmaku,

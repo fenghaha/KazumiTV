@@ -99,7 +99,6 @@ void main() {
                                   danmakuEnabled: true,
                                   onTogglePlayback: () {},
                                   onSeek: (_) {},
-                                  onSeekBy: (_) {},
                                   onEpisodes: () async {},
                                   onNext: () {},
                                   onToggleDanmaku: () {},
