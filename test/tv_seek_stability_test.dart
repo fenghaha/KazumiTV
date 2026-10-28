@@ -164,6 +164,34 @@ void main() {
     seeking.dispose();
   });
 
+  testWidgets(
+    'native confirmation resumes ticks while completion is still waiting',
+    (tester) async {
+      seeking.dispose();
+      final completion = Completer<void>();
+      seeking = TvSeekController(
+        position: const Duration(seconds: 100),
+        duration: const Duration(seconds: 600),
+        onSeek: (_) => completion.future,
+      );
+      seeking.seekTo(const Duration(seconds: 200));
+      await tester.pump(TvSeekController.inputDelay);
+      seeking.updatePlayback(
+        const Duration(seconds: 200),
+        const Duration(seconds: 600),
+      );
+      seeking.updatePlayback(
+        const Duration(seconds: 205),
+        const Duration(seconds: 600),
+      );
+      expect(seeking.position, const Duration(seconds: 205));
+      completion.complete();
+      await tester.pump();
+      expect(seeking.position, const Duration(seconds: 205));
+      seeking.dispose();
+    },
+  );
+
   testWidgets('source loading cancels queued input and its preview', (
     tester,
   ) async {
@@ -215,6 +243,8 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
       final focus = FocusNode();
       final reported = ValueNotifier(const Duration(seconds: 100));
+      final optimistic = ValueNotifier(const Duration(seconds: 100));
+      addTearDown(optimistic.dispose);
       addTearDown(focus.dispose);
       addTearDown(reported.dispose);
       await tester.pumpWidget(
@@ -224,29 +254,37 @@ void main() {
               focusNode: focus,
               autofocus: true,
               child: ValueListenableBuilder<Duration>(
-                valueListenable: reported,
-                builder: (context, position, child) => Stack(
-                  children: [
-                    const SizedBox.expand(),
-                    TvPlayerControls(
-                      playbackFocus: focus,
-                      title: '进度回归',
-                      playing: true,
-                      position: position,
-                      duration: const Duration(seconds: 600),
-                      danmakuEnabled: true,
-                      onTogglePlayback: () {},
-                      onSeek: submitted.add,
-                      onEpisodes: () async {},
-                      onNext: () {},
-                      onToggleDanmaku: () {},
-                      onDanmakuSources: () async {},
-                      onDetails: () async {},
-                      onDanmakuSettings: () async {},
-                      onBack: () {},
+                valueListenable: optimistic,
+                builder: (context, position, child) =>
+                    ValueListenableBuilder<Duration>(
+                      valueListenable: reported,
+                      builder: (context, nativePosition, child) => Stack(
+                        children: [
+                          const SizedBox.expand(),
+                          TvPlayerControls(
+                            playbackFocus: focus,
+                            title: '进度回归',
+                            playing: true,
+                            position: position,
+                            reportedPosition: nativePosition,
+                            duration: const Duration(seconds: 600),
+                            danmakuEnabled: true,
+                            onTogglePlayback: () {},
+                            onSeek: (target) {
+                              submitted.add(target);
+                              optimistic.value = target;
+                            },
+                            onEpisodes: () async {},
+                            onNext: () {},
+                            onToggleDanmaku: () {},
+                            onDanmakuSources: () async {},
+                            onDetails: () async {},
+                            onDanmakuSettings: () async {},
+                            onBack: () {},
+                          ),
+                        ],
+                      ),
                     ),
-                  ],
-                ),
               ),
             ),
           ),
@@ -266,12 +304,17 @@ void main() {
       await tester.pump();
       expect(tester.widget<Slider>(find.byType(Slider)).value, 150000);
       reported.value = const Duration(seconds: 101);
+      optimistic.value = reported.value;
       await tester.pump();
       expect(tester.widget<Slider>(find.byType(Slider)).value, 150000);
       expect(find.text('2:30'), findsOneWidget);
       expect(submitted, isEmpty);
       await tester.pump(TvSeekController.inputDelay);
       expect(submitted, [const Duration(seconds: 150)]);
+      reported.value = const Duration(seconds: 102);
+      optimistic.value = reported.value;
+      await tester.pump();
+      expect(tester.widget<Slider>(find.byType(Slider)).value, 150000);
       // Actual pointer drag uses the same preview and commits on release.
       final slider = tester.widget<Slider>(find.byType(Slider));
       slider.onChangeStart!(150000);
@@ -290,6 +333,7 @@ void main() {
         await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
         await tester.pump(const Duration(milliseconds: 30));
         reported.value += const Duration(seconds: 1);
+        optimistic.value = reported.value;
         await tester.pump();
       }
       expect(find.text('5:30 / 10:00'), findsOneWidget);

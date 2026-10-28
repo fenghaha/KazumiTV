@@ -18,6 +18,7 @@ class TvPlayerControls extends StatefulWidget {
     required this.title,
     required this.playing,
     required this.position,
+    this.reportedPosition,
     required this.duration,
     required this.danmakuEnabled,
     required this.onTogglePlayback,
@@ -36,6 +37,8 @@ class TvPlayerControls extends StatefulWidget {
   final String title;
   final bool playing;
   final Duration position;
+  /// Native position, excluding the upstream seek's optimistic UI assignment.
+  final Duration? reportedPosition;
   final Duration duration;
   final bool danmakuEnabled;
   final VoidCallback onTogglePlayback;
@@ -87,7 +90,7 @@ class _TvPlayerControlsState extends State<TvPlayerControls> {
   void initState() {
     super.initState();
     _seeking = TvSeekController(
-      position: widget.position,
+      position: widget.reportedPosition ?? widget.position,
       duration: widget.duration,
       onSeek: (target) => widget.onSeek(target),
     )..addListener(_onSeekChanged);
@@ -108,7 +111,10 @@ class _TvPlayerControlsState extends State<TvPlayerControls> {
   void didUpdateWidget(covariant TvPlayerControls oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.busy && !oldWidget.busy) _seeking.cancelPending();
-    _seeking.updatePlayback(widget.position, widget.duration);
+    _seeking.updatePlayback(
+      widget.reportedPosition ?? widget.position,
+      widget.duration,
+    );
   }
 
   bool get _ownsInput {

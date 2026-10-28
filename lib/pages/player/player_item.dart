@@ -1408,6 +1408,7 @@ class _PlayerItemState extends State<PlayerItem>
         title: videoPageController.title,
         playing: playerController.playback.playing,
         position: playerController.playback.currentPosition,
+        reportedPosition: playerController.playback.playerPosition,
         duration: playerController.playback.duration,
         danmakuEnabled: playerController.danmaku.danmakuOn,
         busy: videoPageController.loading || playerController.playback.loading,

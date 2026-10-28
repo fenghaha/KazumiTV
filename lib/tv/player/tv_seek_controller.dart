@@ -83,7 +83,8 @@ class TvSeekController extends ChangeNotifier {
   Future<void> _flush() async {
     _inputTimer = null;
     if (_disposed || _dragging || _inFlight || !_queued) return;
-    final target = _target!;
+    final target = _clamp(_target!);
+    _target = target;
     final revision = _revision;
     _queued = false;
     _inFlight = true;
@@ -124,7 +125,6 @@ class TvSeekController extends ChangeNotifier {
     if (target != null &&
         !_dragging &&
         !_queued &&
-        !_inFlight &&
         (_reportedPosition - target).abs() <= positionTolerance) {
       _target = null;
       _settleTimer?.cancel();
