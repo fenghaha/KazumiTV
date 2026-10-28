@@ -2,8 +2,8 @@
   "repository": "https://github.com/Predidit/Kazumi",
   "remote": "upstream",
   "branch": "main",
-  "commit": "db5202611902fe67c449e0a53bc05c3a75b4e8b0",
-  "version": "2.4.1+20401",
+  "commit": "57d13399df3f34641a1b3100822671e8c545cf30",
+  "version": "2.4.2+20402",
   "apiLevel": 9,
   "presentationRevision": 5,
   "reviewedExtensions": {
@@ -16,12 +16,12 @@
       "reason": "2026-10-24 user-requested optional self-hosted danmaku: endpoint selection, isolated auth and real episode IDs; official flow and rule/version/API contracts retained"
     },
     "lib/services/storage/settings_keys.dart": {
-      "sha256": "6221c23c13f2489797f03efda1cf4b4515872e06f1e312b7e773f4777c5eaff4",
-      "reason": "2026-10-24 user-requested optional self-hosted danmaku: endpoint selection, isolated auth and real episode IDs; official flow and rule/version/API contracts retained"
+      "sha256": "7cde0d1fefb015abf0bd022c492321c8e17bf40305c9741abbcaaa9a43111284",
+      "reason": "2026-10-28 rebase of the existing user-requested self-hosted danmaku extension onto Kazumi 2.4.2: retain upstream shared ECH/rules-mirror behavior and keep custom endpoint keys, pooled non-logging danmaku client and network reset ownership; no new extension scope"
     },
     "lib/request/core/dio_factory.dart": {
-      "reason": "2026-10-24 self-hosted danmaku transport: pooled non-logging client follows network reset; shared factory supports deterministic fake transport regression",
-      "sha256": "31a10a674b0cb9c024afb63cf145dd206b6ca880505bb699bd00597a86772005"
+      "reason": "2026-10-28 rebase of the existing user-requested self-hosted danmaku extension onto Kazumi 2.4.2: retain upstream shared ECH/rules-mirror behavior and keep custom endpoint keys, pooled non-logging danmaku client and network reset ownership; no new extension scope",
+      "sha256": "0647e61d3e566fa0c35c9d787aa5863a7015e1f20e429d8a9276c9abca8463e1"
     }
   }
 }

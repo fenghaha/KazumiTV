@@ -6,6 +6,8 @@ import 'package:kazumi/services/network/bangumi_acceleration.dart';
 import 'package:kazumi/services/network/image_acceleration.dart';
 import 'package:kazumi/services/network/rules_mirror.dart';
 import 'package:kazumi/services/storage/storage.dart';
+import 'package:kazumi/tv/settings/tv_acceleration_choices.dart';
+import 'package:kazumi/tv/tv_mode.dart';
 
 class NetworkMirrorSettings extends StatefulWidget {
   const NetworkMirrorSettings({super.key, this.margin});
@@ -89,6 +91,15 @@ Future<bool> selectAccelerationMode<T extends AccelerationMode>(
   required List<T> modes,
   required SettingKey<String> setting,
 }) async {
+  if (TvMode.enabled) {
+    return selectTvAccelerationMode(
+      context,
+      title: title,
+      current: current,
+      modes: modes,
+      setting: setting,
+    );
+  }
   final selected = await KazumiDialog.show<T>(
     context: context,
     builder: (context) => SimpleDialog(
