@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
@@ -13,7 +12,6 @@ import 'package:kazumi/request/config/api_endpoints.dart';
 import 'package:kazumi/request/core/dio_factory.dart';
 import 'package:kazumi/request/core/dio_logger_interceptor.dart';
 import 'package:kazumi/request/core/ech_adapter.dart';
-import 'package:kazumi/services/network/proxy_manager.dart';
 import 'package:kazumi/services/network/rules_mirror.dart';
 import 'package:kazumi/services/storage/storage.dart';
 import 'package:kazumi/tv/tv_mode.dart';
@@ -114,7 +112,7 @@ void main() {
     );
   }
 
-  test('custom danmaku pool stays non-logging, outside ECH, and resets with proxy state', () {
+  test('custom danmaku pool stays non-logging, outside ECH, and resets with network clients', () {
     final custom = DioFactory.danmakuCustomDio;
     expect(identical(custom, DioFactory.danmakuCustomDio), isTrue);
     expect(custom.httpClientAdapter, isA<IOHttpClientAdapter>());
@@ -122,7 +120,7 @@ void main() {
     expect(custom.options.receiveTimeout, const Duration(seconds: 45));
     final requests = _Requests();
     custom.httpClientAdapter = requests;
-    ProxyManager.clearProxy();
+    DioFactory.reset();
     expect(requests.closed, isTrue);
     expect(identical(custom, DioFactory.danmakuCustomDio), isFalse);
     expect(DioFactory.bangumiDio.httpClientAdapter, isA<EchAdapter>());
