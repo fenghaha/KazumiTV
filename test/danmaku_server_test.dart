@@ -49,8 +49,8 @@ void main() {
   test('blank preserves the official endpoint; custom prefixes survive', () {
     expect(DanmakuServer.normalizeBase(''), DanmakuServer.officialBase);
     expect(
-      DanmakuServer.normalizeBase(' http://192.168.0.4:8668/danmaku/ '),
-      'http://192.168.0.4:8668/danmaku',
+      DanmakuServer.normalizeBase(' http://192.168.50.20:8080/danmaku/ '),
+      'http://192.168.50.20:8080/danmaku',
     );
     expect(DanmakuServer.isOfficial('https://api.dandanplay.net'), isTrue);
     expect(

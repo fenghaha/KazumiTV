@@ -29,12 +29,18 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev
       - run: flutter pub get
       - run: python3 tool/tv/check_upstream.py
+      - name: TV build and diagnostic script checks
+        run: |
+          python3 -m unittest discover -s tool/tv -p 'test_*.py'
+          python3 -m unittest discover -s tool/tv/native -p 'test_*.py'
       - run: flutter analyze --no-fatal-infos
       - run: flutter test --concurrency=1
       - name: Match upstream JNI build-id workaround
         run: sed -i -e 's/-Wl,/-Wl,--build-id=none,/' "$HOME"/.pub-cache/hosted/pub.dev/jni-*/src/CMakeLists.txt
-      - run: bash tool/tv/build.sh
+      # CI has no personal signing config, home endpoints or reviewed ARM32
+      # release library. ARM64 uses the upstream kernel and a development key.
+      - run: bash tool/tv/build.sh --target-platform android-arm64
       - uses: actions/upload-artifact@v4
         with:
-          name: KazumiTV-development-apks
+          name: KazumiTV-generic-arm64-development-apk
           path: build/app/outputs/flutter-apk/*-livingroom-release.apk

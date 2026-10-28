@@ -38,7 +38,7 @@ Misaka 更适合需要持久弹幕库、元数据与 Emby Webhook 的后续阶�
 
 2026-10-24 用户要求统一主分支与交接后，本扩展已快进合入主开发分支
 `codex/kazumitv`，Mac 主工作副本为后续写入入口；独立弹幕工作树只作历史保留。
-UBT `/home/bw/work/KazumiTV` 同步主分支，独立构建目录留存原始测试/打包证据。
+UBT `$BUILD_WORKSPACE/KazumiTV` 同步主分支，独立构建目录留存原始测试/打包证据。
 
 ## 后续构建
 
@@ -80,8 +80,8 @@ Mac 与飞牛链路已实测搜索→分集详情→非空 comments；芙莉莲 
 
 - 基线：`codex/kazumitv / e3b7f2a1c7fd695e941d1af775f82aaa7b346037`。
 - 修复：`codex/danmaku-client-audit-20261025 / 72dd4558b38f1aaecacc2b5ab759382a7c37e75c`。
-- Mac 独立工作树：`/Users/blickwinkel/Documents/CodexProject/KazumiTV-danmaku-client-audit`。
-- UBT 独立验收副本：`/home/bw/work/KazumiTV-danmaku-client-audit-20261025`。
+- Mac 独立工作树：`$WORKSPACE/KazumiTV-danmaku-client-audit`。
+- UBT 独立验收副本：`$BUILD_WORKSPACE/KazumiTV-danmaku-client-audit-20261025`。
 - 状态：源码已修复并提交、离线回归通过；未合主线、未打包/安装、未连接电视或投影。
   不修改弹幕 API、缓存、凭据、解码/渲染器或运行服务；不向其他会话发送消息。
 
@@ -116,7 +116,7 @@ UBT `bw-Ubuntu / bw`，Flutter 3.47.7 / Dart 3.13.5；全部验证使用既有
 - 验证日志在 UBT 此独立副本 `build/audit/`，Mac 同工作树另有回收副本；以最终源码逐文件 SHA256 核对验证输入。
 
 第一次测试启动缺 CMake/Ninja PATH，随后仅在本任务进程增加现有
-`/home/bw/tools/android-sdk/cmake/3.22.1/bin`；测试桩最初将 clear 回调写成方法，
+`$ANDROID_HOME/cmake/3.22.1/bin`；测试桩最初将 clear 回调写成方法，
 已纠正为 getter 后重跑。通过结果只来自修正后的最终回归，不把失败尝试算通过。
 
 后续合入前重新比较主线和其他候选，使用普通合并保留并行开发；不得为接续 reset

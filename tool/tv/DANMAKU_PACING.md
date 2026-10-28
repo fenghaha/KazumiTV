@@ -12,8 +12,8 @@
 
 “视频网速”会话先占用极米做网络测试。用户已授权发消息协调，只有它明确交接、停止测速流量后，本会话才安装或操作设备。不得同时测网络与绘制，或把另一会话的网络测试扰动当作弹幕数据。
 
-- Mac：`/Users/blickwinkel/Documents/CodexProject/KazumiTV-danmaku-pacing`
-- UBT：`/home/bw/work/KazumiTV-danmaku-pacing`
+- Mac：`$WORKSPACE/KazumiTV-danmaku-pacing`
+- UBT：`$BUILD_WORKSPACE/KazumiTV-danmaku-pacing`
 - 不复用 canonical 构建目录，不改另一会话的测速文件，不关临时ADB调试通道。
 - 构建/测试顺序执行，Gradle单worker/2GiB/in-process Kotlin，签名文件留在既有私有路径。
 
