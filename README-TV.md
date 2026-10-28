@@ -132,7 +132,9 @@ TV 播放页根部始终保护退出，加载中也生效。返回先结束进�
 
 建议把私有配置放在仓库外，通过 `KAZUMI_TV_KEY_PROPERTIES`、`KAZUMI_TV_ARM32_LIBMPV` 和 `--dart-define-from-file` 注入；仓库内临时使用 `defines.local.json` 也会被忽略，示例可命名 `defines.example.json`。源码文档的 `$WORKSPACE` / `$BUILD_WORKSPACE` / `$ANDROID_HOME` 为可移植路径占位符，实际机器路径、设备现场和正式包交接留在本地运维记录。
 
-GitHub TV workflow 执行契约、脚本、分析与 Flutter 回归，只生成 generic ARM64 开发包；它不读取家庭服务配置或个人签名，也不依赖本地 ARM32 优化库。CI 开发包不能覆盖已安装的个人签名正式包。海信/极米正式包继续在受控构建机使用原私有签名和评审过的内核生成。
+GitHub 的 `KazumiTV checks` 已改为仅 `workflow_dispatch` 手动运行，普通 push/PR 不再触发该 TV 工作流。手动运行默认只做契约、脚本、分析与 Flutter 回归；仅勾选 `build_apk` 时才生成 generic ARM64 开发包。按需云端独立验证仍保留，日常以 UBT 固定提交验证与正式构建为主，避免每次推送重复打包。
+
+可选云端 APK 构建先在 GitHub 托管临时 runner 清理预装但无关的 .NET/GHC/CodeQL 来腾出空间，不会在 Mac/UBT 或 self-hosted runner 执行这项清理。它不读取家庭服务配置或个人签名，也不依赖本地 ARM32 优化库；CI 开发包不能覆盖个人签名正式包。海信/极米正式包仍在受控构建机使用原私有签名和评审内核生成。此前两次自动任务因云端磁盘空间耗尽而失败，静态/脚本/Flutter 测试均已通过；改为手动不代表这两次历史失败记录已被重跑通过，也不宣称清理后的可选云端打包已实跑验收。继承的上游 PR/release 模板保留，当前不推上游 tags。
 
 ## 构建
 

@@ -2,9 +2,11 @@ name: KazumiTV checks
 
 on:
   workflow_dispatch:
-  push:
-    branches: [codex/kazumitv]
-  pull_request:
+    inputs:
+      build_apk:
+        description: Also build a generic ARM64 development APK
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -16,6 +18,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Free hosted-runner disk for optional APK build
+        if: ${{ inputs.build_apk && runner.environment == 'github-hosted' }}
+        run: |
+          df -h /
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
+          df -h /
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -36,11 +44,15 @@ jobs:
       - run: flutter analyze --no-fatal-infos
       - run: flutter test --concurrency=1
       - name: Match upstream JNI build-id workaround
+        if: ${{ inputs.build_apk }}
         run: sed -i -e 's/-Wl,/-Wl,--build-id=none,/' "$HOME"/.pub-cache/hosted/pub.dev/jni-*/src/CMakeLists.txt
       # CI has no personal signing config, home endpoints or reviewed ARM32
       # release library. ARM64 uses the upstream kernel and a development key.
-      - run: bash tool/tv/build.sh --target-platform android-arm64
+      - name: Build optional ARM64 development APK
+        if: ${{ inputs.build_apk }}
+        run: bash tool/tv/build.sh --target-platform android-arm64
       - uses: actions/upload-artifact@v4
+        if: ${{ inputs.build_apk }}
         with:
           name: KazumiTV-generic-arm64-development-apk
           path: build/app/outputs/flutter-apk/*-livingroom-release.apk
