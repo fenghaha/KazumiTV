@@ -27,7 +27,7 @@ void main() {
       },
     );
     final controller = PluginsController(pluginJsonWriter: (_) async {});
-    final uri = TvRuleSubscriptions.inputUrl(' http://192.168.0.4:8668/rule ')!;
+    final uri = TvRuleSubscriptions.inputUrl(' http://192.168.50.20:8080/rule ')!;
     final subscriptions = service();
     await subscriptions.install(
       controller,

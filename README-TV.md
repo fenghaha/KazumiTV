@@ -115,6 +115,16 @@ TV 播放页根部始终保护退出，加载中也生效。返回先结束进�
 - Emby 桥接、danmu_api 部署与 AP 出站规则各自维护，运行事实见 KnowledgeHub `KazumiTV-Emby桥接.md`、`KazumiTV-弹幕服务与故障处理.md`；东京喰种四季源名、媒体跳转修复、弹幕服务与电视验收是不同状态。
 - 主会话继续开发前核 `git status`、`git log -1`，读 [弹幕接入说明](tool/tv/DANMAKU.md) 并跑契约检查。当前 Mac/UBT 主工程均可接续；独立弹幕工作树保留为历史，不再作为并行写入端。设备画面/声音/弹幕时间轴仍待海信与极米分别验收。
 
+## GitHub 源码与本地私有内容（2026-10-28）
+
+个人源码仓库为私有 `fenghaha/KazumiTV`，主开发分支仍为 `codex/kazumitv`；`origin` 用于自己的仓库，`upstream` 继续指向 Predidit/Kazumi。仅推送明确分支，不使用 `--all` / `--mirror`，不推送本地诊断、备份分支或上游 release tags。
+
+`.gitignore` 排除本机 IDE/Agent 设置、`.env`、私有 defines、签名和密钥、运行数据、APK、源码 bundle、日志与设备采样；已停止跟踪 `.vscode`，本机可保留自己的配置。`pubspec.lock`、开发与构建脚本、测试、许可证以及 `licenses/ech_http/cacert.pem` 公共 CA 包继续跟踪。`.gitignore` 不会清除已提交历史；首次推送前另扫描待推送分支历史，之后也不得提交实际凭据。
+
+建议把私有配置放在仓库外，通过 `KAZUMI_TV_KEY_PROPERTIES`、`KAZUMI_TV_ARM32_LIBMPV` 和 `--dart-define-from-file` 注入；仓库内临时使用 `defines.local.json` 也会被忽略，示例可命名 `defines.example.json`。源码文档的 `$WORKSPACE` / `$BUILD_WORKSPACE` / `$ANDROID_HOME` 为可移植路径占位符，实际机器路径、设备现场和正式包交接留在本地运维记录。
+
+GitHub TV workflow 执行契约、脚本、分析与 Flutter 回归，只生成 generic ARM64 开发包；它不读取家庭服务配置或个人签名，也不依赖本地 ARM32 优化库。CI 开发包不能覆盖已安装的个人签名正式包。海信/极米正式包继续在受控构建机使用原私有签名和评审过的内核生成。
+
 ## 构建
 
 使用 `pubspec.yaml` 要求的 Flutter SDK、JDK 17 与 Android SDK/NDK。Flutter 版本随上游更新，不在 TV 脚本另锁一份。当前本机开发，UBT 的独立 Flutter 3.47.7 环境用于 Linux 构建；不要覆盖 Muse 的旧 SDK/工作区。

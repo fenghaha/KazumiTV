@@ -6,25 +6,25 @@ void main() {
     expect(
       TvLanAddress.select(const [
         TvLanAddress('192.168.49.1', 'p2p0'),
-        TvLanAddress('192.168.0.14', 'wlan0'),
+        TvLanAddress('192.168.50.10', 'wlan0'),
       ])?.address,
-      '192.168.0.14',
+      '192.168.50.10',
     );
   });
   test('OS active Ethernet takes priority over another private interface', () {
     expect(
       TvLanAddress.select(const [
         TvLanAddress('10.1.0.2', 'wlan0'),
-        TvLanAddress('192.168.0.14', 'eth0', active: true),
+        TvLanAddress('192.168.50.10', 'eth0', active: true),
       ])?.address,
-      '192.168.0.14',
+      '192.168.50.10',
     );
   });
   test('no QR is generated from only casting and VPN interfaces', () {
     expect(
       TvLanAddress.select(const [
         TvLanAddress('192.168.49.1', 'p2p-wlan0-0', active: true),
-        TvLanAddress('10.66.66.2', 'tun0'),
+        TvLanAddress('10.8.0.2', 'tun0'),
       ]),
       isNull,
     );

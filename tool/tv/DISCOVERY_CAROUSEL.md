@@ -5,7 +5,7 @@
 本特性把“今晚看什么”下面只展示热门第一部的大卡片改为多推荐轮播。先按用户要求在 Mac 独立分支开发，随后于 2026-10-25 18：37 获用户明确安排，合入 Mac 主开发分支 `codex/kazumitv`。本次合入不运行测试/静态分析、不编译安装、不连接 UBT 或设备、不联系其他会话，避免干扰其进行中的测试。
 
 - 分支：`codex/tv-discovery-carousel-20261025`
-- 工作树：`/Users/blickwinkel/Documents/CodexProject/KazumiTV-discovery-carousel`
+- 工作树：`$WORKSPACE/KazumiTV-discovery-carousel`
 - 基线：`e3b7f2a1c7fd695e941d1af775f82aaa7b346037`
 - 当前状态（18：37）：功能提交 `04e6e13e56d4a94efaae9068a4ecc1df24d28ed9` 已合入 Mac `codex/kazumitv`；未同步 UBT、未生成 APK 或安装设备。
 - 候选阶段（16：57，历史）：源码与本地自动检查完成，324 项测试通过；当时仍未合入。以下 Mac 检查结果均属于该固定功能提交，不是本次重新运行。
