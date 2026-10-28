@@ -20,6 +20,9 @@ class TvSliderTile extends StatefulWidget {
     this.parentHandlesBack = false,
     this.compact = false,
     this.semanticLabel,
+    this.onStep,
+    this.onChangeStart,
+    this.onChangeEnd,
   });
   final bool enabled;
   /// A bare, full-width track for the playback overlay, without settings copy.
@@ -34,6 +37,10 @@ class TvSliderTile extends StatefulWidget {
   final String valueLabel;
   final int? divisions;
   final ValueChanged<double> onChanged;
+  /// Lets playback accumulate remote steps before the next widget rebuild.
+  final ValueChanged<double>? onStep;
+  final ValueChanged<double>? onChangeStart;
+  final ValueChanged<double>? onChangeEnd;
   @override
   State<TvSliderTile> createState() => TvSliderTileState();
 }
@@ -126,8 +133,13 @@ class TvSliderTileState extends State<TvSliderTile> {
         key == LogicalKeyboardKey.arrowRight) {
       if (!widget.enabled) return KeyEventResult.handled;
       final step = (widget.max - widget.min) / (widget.divisions ?? 100);
+      final delta = key == LogicalKeyboardKey.arrowRight ? step : -step;
+      if (widget.onStep != null) {
+        widget.onStep!(delta);
+        return KeyEventResult.handled;
+      }
       final next =
-          (widget.value + (key == LogicalKeyboardKey.arrowRight ? step : -step))
+          (widget.value + delta)
               .clamp(widget.min, widget.max)
               .toDouble();
       if (next != widget.value) widget.onChanged(next);
@@ -142,8 +154,12 @@ class TvSliderTileState extends State<TvSliderTile> {
       min: widget.min,
       max: widget.max,
       divisions: widget.divisions,
-      onChangeStart: widget.enabled ? (_) => _focus.requestFocus() : null,
+      onChangeStart: widget.enabled ? (value) {
+        _focus.requestFocus();
+        widget.onChangeStart?.call(value);
+      } : null,
       onChanged: widget.enabled ? widget.onChanged : null,
+      onChangeEnd: widget.enabled ? widget.onChangeEnd : null,
     );
     return ExcludeFocus(
       child: widget.compact

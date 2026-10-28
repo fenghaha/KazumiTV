@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:kazumi/tv/player/tv_frame_monitor.dart';
+import 'package:kazumi/tv/player/tv_seek_controller.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -21,7 +22,6 @@ class TvPlayerControls extends StatefulWidget {
     required this.danmakuEnabled,
     required this.onTogglePlayback,
     required this.onSeek,
-    required this.onSeekBy,
     required this.onEpisodes,
     required this.onNext,
     required this.onToggleDanmaku,
@@ -39,8 +39,7 @@ class TvPlayerControls extends StatefulWidget {
   final Duration duration;
   final bool danmakuEnabled;
   final VoidCallback onTogglePlayback;
-  final ValueChanged<Duration> onSeek;
-  final ValueChanged<Duration> onSeekBy;
+  final FutureOr<void> Function(Duration) onSeek;
   final Future<void> Function() onEpisodes;
   final VoidCallback onNext;
   final VoidCallback onToggleDanmaku;
@@ -71,6 +70,7 @@ class _TvPlayerControlsState extends State<TvPlayerControls> {
   bool _modalOpen = false;
   bool _disposing = false;
   DateTime? _lastSeek;
+  late final TvSeekController _seeking;
   TvPlaybackBackController? _back;
 
   @override
@@ -86,6 +86,11 @@ class _TvPlayerControlsState extends State<TvPlayerControls> {
   @override
   void initState() {
     super.initState();
+    _seeking = TvSeekController(
+      position: widget.position,
+      duration: widget.duration,
+      onSeek: (target) => widget.onSeek(target),
+    )..addListener(_onSeekChanged);
     TvFrameMonitor.shared.start();
     FocusManager.instance.addEarlyKeyEventHandler(_handleRemote);
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -93,6 +98,17 @@ class _TvPlayerControlsState extends State<TvPlayerControls> {
       _showControls();
       _initialTimer = Timer(const Duration(seconds: 5), _hideControls);
     });
+  }
+
+  void _onSeekChanged() {
+    if (mounted && !_disposing) setState(() {});
+  }
+
+  @override
+  void didUpdateWidget(covariant TvPlayerControls oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.busy && !oldWidget.busy) _seeking.cancelPending();
+    _seeking.updatePlayback(widget.position, widget.duration);
   }
 
   bool get _ownsInput {
@@ -185,7 +201,7 @@ class _TvPlayerControlsState extends State<TvPlayerControls> {
       return;
     }
     _lastSeek = now;
-    widget.onSeekBy(Duration(seconds: seconds));
+    _seeking.seekBy(Duration(seconds: seconds));
     if (!_visible) {
       setState(() => _seekHint = true);
       _seekHintTimer?.cancel();
@@ -356,6 +372,7 @@ class _TvPlayerControlsState extends State<TvPlayerControls> {
   @override
   void dispose() {
     _disposing = true;
+    _seeking.dispose();
     TvFrameMonitor.shared.stop();
     _back?.unregisterOverlay(this);
     FocusManager.instance.removeEarlyKeyEventHandler(_handleRemote);
@@ -435,7 +452,7 @@ class _TvPlayerControlsState extends State<TvPlayerControls> {
                       vertical: 6,
                     ),
                     child: Text(
-                      '${_time(widget.position)} / ${_time(widget.duration)}',
+                      '${_time(_seeking.position)} / ${_time(widget.duration)}',
                       style: const TextStyle(
                         fontSize: 20,
                         color: Color(0xFFF5F1E8),
@@ -503,7 +520,7 @@ class _TvPlayerControlsState extends State<TvPlayerControls> {
               Row(
                 children: [
                   Text(
-                    _time(widget.position),
+                    _time(_seeking.position),
                     style: const TextStyle(
                       fontSize: 14,
                       color: Colors.white,
@@ -518,8 +535,8 @@ class _TvPlayerControlsState extends State<TvPlayerControls> {
                       compact: true,
                       semanticLabel: '播放进度',
                       title: const Text('播放进度'),
-                      valueLabel: _time(widget.position),
-                      value: widget.position.inMilliseconds
+                      valueLabel: _time(_seeking.position),
+                      value: _seeking.position.inMilliseconds
                           .toDouble()
                           .clamp(0.0, max),
                       min: 0,
@@ -527,7 +544,12 @@ class _TvPlayerControlsState extends State<TvPlayerControls> {
                       divisions: (widget.duration.inSeconds ~/ 10)
                           .clamp(1, 100000),
                       enabled: !widget.busy && widget.duration > Duration.zero,
-                      onChanged: (value) => widget.onSeek(
+                      onStep: (delta) => _seeking.seekBy(
+                        Duration(milliseconds: delta.round()),
+                      ),
+                      onChangeStart: (_) => _seeking.beginDrag(),
+                      onChangeEnd: (_) => _seeking.endDrag(),
+                      onChanged: (value) => _seeking.seekTo(
                         Duration(milliseconds: value.round()),
                       ),
                     ),
