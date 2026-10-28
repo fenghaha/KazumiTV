@@ -159,7 +159,9 @@ void main() {
         ).requestFocus();
         await tester.pumpAndSettle();
         final original = FocusManager.instance.primaryFocus;
-        await tester.sendKeyEvent(LogicalKeyboardKey.select);
+        await tester.runAsync(
+          () => tester.sendKeyEvent(LogicalKeyboardKey.select),
+        );
         await tester.pumpAndSettle();
         expect(find.byType(AlertDialog), findsOneWidget);
         // Arrow navigation must not save or dismiss like a touch RadioGroup.
@@ -167,12 +169,19 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.byType(AlertDialog), findsOneWidget);
         expect(GStorage.getSetting(SettingsKeys.rulesMirror), '');
-        await tester.sendKeyEvent(LogicalKeyboardKey.select);
+        await tester.runAsync(
+          () => tester.sendKeyEvent(LogicalKeyboardKey.select),
+        );
+        await tester.pumpAndSettle();
+        // Keep Hive I/O out of the widget test's fake-clock zone.
+        await tester.runAsync(() => Hive.box<dynamic>('setting').flush());
         await tester.pumpAndSettle();
         expect(RulesMirror.current, RulesMirror.ghfast);
         expect(find.byType(AlertDialog), findsNothing);
         expect(FocusManager.instance.primaryFocus, original);
-        await tester.sendKeyEvent(LogicalKeyboardKey.select);
+        await tester.runAsync(
+          () => tester.sendKeyEvent(LogicalKeyboardKey.select),
+        );
         await tester.pumpAndSettle();
         await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
         await tester.sendKeyEvent(LogicalKeyboardKey.escape);
