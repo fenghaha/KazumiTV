@@ -6,6 +6,7 @@ import 'package:kazumi/tv/tv_page_scaffold.dart';
 import 'package:kazumi/tv/tv_theme.dart';
 import 'package:kazumi/tv/widgets/tv_focusable.dart';
 import 'package:kazumi/tv/update/tv_update_page.dart';
+import 'package:kazumi/tv/update/tv_update_service.dart';
 
 /// TV presentation only; detailed preferences remain in the upstream pages.
 class TvSettingsPage extends StatelessWidget {
@@ -85,7 +86,7 @@ class TvSettingsPage extends StatelessWidget {
             '打开上游完整设置界面',
             '/settings',
           ),
-          const TvUpdateSettingsTile(),
+          if (TvUpdateService.supportedBuild) const TvUpdateSettingsTile(),
           const TvRemoteInputAddress(),
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 12),

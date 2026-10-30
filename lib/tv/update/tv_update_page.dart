@@ -12,8 +12,9 @@ import 'package:kazumi/tv/widgets/tv_focusable.dart';
 Future<void> showTvUpdates([BuildContext? context]) async {
   final target = context ?? rootNavigatorKey.currentContext;
   if (target == null || !target.mounted) return;
-  await Navigator.of(target)
-      .push<void>(MaterialPageRoute(builder: (_) => const TvUpdatePage()));
+  await Navigator.of(
+    target,
+  ).push<void>(MaterialPageRoute(builder: (_) => const TvUpdatePage()));
 }
 
 class TvUpdateSettingsTile extends StatelessWidget {
@@ -21,40 +22,45 @@ class TvUpdateSettingsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!TvUpdateService.supportedBuild) return const SizedBox.shrink();
     final service = TvUpdateService.instance;
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
-      child: ListenableBuilder(
-        listenable: service,
-        builder: (context, _) => TvFocusable(
-          onPressed: () => showTvUpdates(context),
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
-          child: Row(
-            children: [
-              const Icon(
-                Icons.system_update_rounded,
-                color: TvTheme.focus,
-                size: 32,
-              ),
-              const SizedBox(width: 20),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('软件更新', style: TextStyle(fontSize: 23)),
-                    const SizedBox(height: 3),
-                    Text(
-                      service.available == null
-                          ? '检查并安装 KazumiTV 电视版更新'
-                          : '发现新版 ${service.manifest!.revision}，可下载更新',
-                      style: const TextStyle(color: TvTheme.muted),
-                    ),
-                  ],
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: TvTheme.surface,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: ListenableBuilder(
+          listenable: service,
+          builder: (context, _) => TvFocusable(
+            onPressed: () => showTvUpdates(context),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.system_update_rounded,
+                  color: TvTheme.focus,
+                  size: 32,
                 ),
-              ),
-              const Icon(Icons.chevron_right_rounded),
-            ],
+                const SizedBox(width: 20),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('软件更新', style: TextStyle(fontSize: 23)),
+                      const SizedBox(height: 3),
+                      Text(
+                        service.available == null
+                            ? '检查并安装 KazumiTV 电视版更新'
+                            : '发现新版 ${service.manifest!.revision}，可下载更新',
+                        style: const TextStyle(color: TvTheme.muted),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right_rounded),
+              ],
+            ),
           ),
         ),
       ),
@@ -224,7 +230,7 @@ class _TvUpdatePageState extends State<TvUpdatePage>
     final busy = _checking || _downloading;
     return TvPageScaffold(
       title: '软件更新',
-      subtitle: 'KazumiTV 电视版 · GitHub 官方项目发布',
+      subtitle: 'KazumiTV 电视版 · 本项目 GitHub 发布',
       child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
