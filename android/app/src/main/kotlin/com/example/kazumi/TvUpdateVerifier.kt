@@ -52,8 +52,11 @@ object TvUpdateVerifier {
                     require(file.isFile && file.path.startsWith(
                         activity.cacheDir.canonicalPath + File.separator
                     )) { "安装包不在本应用下载目录" }
+                    // Some TV firmware only collects archive certificates when GET_SIGNATURES
+                    // is also requested. Still compare current APK signers, never trust an empty set.
                     val flags = if (Build.VERSION.SDK_INT >= 28)
-                        PackageManager.GET_SIGNING_CERTIFICATES else PackageManager.GET_SIGNATURES
+                        (PackageManager.GET_SIGNING_CERTIFICATES or PackageManager.GET_SIGNATURES)
+                        else PackageManager.GET_SIGNATURES
                     val current = pm.getPackageInfo(activity.packageName, flags)
                     val candidate = pm.getPackageArchiveInfo(file.path, flags)
                         ?: error("无法读取安装包")

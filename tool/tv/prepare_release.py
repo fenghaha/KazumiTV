@@ -58,7 +58,7 @@ def main():
         })
     manifest = {'schema': 1, 'package': 'com.fenghaha.kazumitv',
                 'version': version, 'revision': release['revision'],
-                'notes': '新增电视横幅；支持检查、下载、校验并安装本项目电视版更新。保留原有设置与观看记录。',
+                'notes': '深色遥控更新对话框；统一设置卡片与电视横幅；修复电视固件签名解析；支持应用内检查、下载、校验和安装。保留原有设置与观看记录。',
                 'assets': assets}
     (args.output / 'tv-update.json').write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')

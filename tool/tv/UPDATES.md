@@ -52,3 +52,31 @@ Android SDK 中的 aapt/apksigner、已安装版本的签名证书 SHA256 和独
 新电视横幅以项目既有角色作参考，经 ImageGen 生成；用于取代旧电视横幅，不改写原图标
 作者署名和权利说明，也不将原角色图稿重新声明为无条件自由素材。Aerial 使用应用横幅，
 无需为新图标单独授权桌面服务或保存其管理能力 URL。
+
+## 电视固件签名解析兼容性（2026-10-31）
+
+极米 Android 13 实机的 `getPackageArchiveInfo` 仅传 `GET_SIGNING_CERTIFICATES` 时，
+能读取包名与版本，但 `signingInfo` 为空；同时传入 `GET_SIGNATURES` 后会正常收集证书。
+因此 API28 及以上同时请求两标志，比较仍只用 `signingInfo.apkContentsSigners` 的完整
+SHA256 集合，要求非空且与当前安装完全相同；不会以旧证书历史或空集合放行。
+
+可将 `tool/tv/android/SignatureProbe.java` 用 Android SDK android.jar 编译，经 d8 转为
+classes.dex 并打成 jar，以 shell 的 app_process 对已公开 APK 复现。它不读取应用数据或
+签名私钥，仅查询安装包证书，比较两种查询标志。第二个参数为 `mismatch` 时要求拒绝
+不同证书；默认要求当前签名一致。测试只使用本项目包，不替换系统应用。
+
+r5.8.2 首次正式验收暴露了上述问题；该版旧验证器无法自行更新，需要先同签名覆盖安装
+修正版一次。r5.8.3 起保留兼容标志。普通 Android 安装确认、哈希、包名、版本和签名要求
+均保留；不能通过跳过签名检查解决固件解析差异。
+## 更新提醒与云端触发策略（2026-10-31）
+
+TV 首页不再使用 SnackBar 的限时触控按钮。检查到更新后，使用显式 `TvTheme.dark`
+Dialog，提供“稍后”“查看更新”，默认聚焦稍后，方向键／确认键可完成选择，返回或
+Escape 关闭，并在关闭后恢复此前焦点；只有首页仍处于前台且未被其他路由覆盖时显示。
+不在播放期间弹窗或轮询。
+
+继承的 `.github/workflows/release.yaml` 原来匹配任意 push tag，TV 标签因此意外触发
+iOS、Linux 等上游多平台发布。r5.8.2 的 Linux 打包将带 v 的 TV 标签直接作为 Debian
+Version，导致失败邮件；这不是 UBT 已签名 TV APK 的构建结果。下游将该工作流改为
+仅 workflow_dispatch；专门的 KazumiTV checks 也继续保持手动检查／可选开发包，不自动
+上传没有个人签名的包。不得用关闭用户全局邮件通知来掩盖触发配置错误。

@@ -88,6 +88,8 @@ ARM32 包需要按 [原生内核说明](tool/tv/native/README.md) 准备经过�
 [`prepare_release.py`](tool/tv/prepare_release.py) 生成两种 APK 对应的更新清单和校验文件。
 共享构建机按顺序运行测试与构建，不并行叠加；详细约定见 [AGENTS.md](AGENTS.md)。
 
+电视标签不会自动触发继承的多平台 release 工作流；云端检查和该历史发布流程均保留手动入口。正式 TV 包在受控环境用同一私有证书串行构建，个人签名材料不上传 GitHub。
+
 ## 代码结构
 
 | 目录 | 职责 |

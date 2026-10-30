@@ -2,9 +2,8 @@
     name: "release"
     
     on:
-      push:
-        tags:
-          - "*"
+      # Downstream TV tags must not start upstream iOS/Linux/signing jobs.
+      # Personal TV releases are built and signed outside GitHub Actions.
       workflow_dispatch:
         inputs:
           logLevel:

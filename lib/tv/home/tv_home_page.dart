@@ -18,6 +18,7 @@ import 'package:kazumi/tv/widgets/tv_focusable.dart';
 import 'package:kazumi/tv/widgets/tv_poster.dart';
 import 'package:kazumi/tv/widgets/tv_scroll_boundary.dart';
 import 'package:kazumi/tv/update/tv_update_page.dart';
+import 'package:kazumi/tv/update/tv_update_prompt.dart';
 import 'package:kazumi/tv/update/tv_update_service.dart';
 import 'package:kazumi/tv/update/tv_private_defaults.dart';
 
@@ -128,16 +129,15 @@ class _TvHomePageState extends State<TvHomePage> with RouteAware {
             updates.available == null) {
           return;
         }
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('KazumiTV 有新版本 ${updates.manifest!.revision}'),
-            duration: const Duration(seconds: 8),
-            action: SnackBarAction(
-              label: '查看更新',
-              onPressed: () => showTvUpdates(context),
-            ),
-          ),
+        final openUpdates = await showTvUpdatePrompt(
+          context,
+          revision: updates.manifest!.revision,
         );
+        if (openUpdates &&
+            mounted &&
+            ModalRoute.of(context)?.isCurrent == true) {
+          await showTvUpdates(context);
+        }
       });
     }
     if (widget.initialQuery.trim().isNotEmpty) {
