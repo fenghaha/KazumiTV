@@ -7,7 +7,8 @@ case "$tv_device_profile" in
   generic|xgimi-z9x|hisense-mt9655) ;;
   *) echo "Unsupported KAZUMI_TV_DEVICE_PROFILE; use generic, xgimi-z9x or hisense-mt9655" >&2; exit 2 ;;
 esac
-tv_revision="${KAZUMI_TV_REVISION:-r5.7-$tv_device_profile}"
+release_revision="$(python3 -c 'import json; print(json.load(open("tool/tv/release.json"))["revision"])')"
+tv_revision="${KAZUMI_TV_REVISION:-$release_revision-$tv_device_profile}"
 # Bound the shared build host's memory use; callers may supply an explicit budget.
 export GRADLE_OPTS="${GRADLE_OPTS:--Dorg.gradle.daemon=false -Dorg.gradle.workers.max=1 -Dorg.gradle.jvmargs=-Xmx2048m -Dorg.gradle.project.kotlin.compiler.execution.strategy=in-process}"
 flutter build apk --release --split-per-abi --flavor livingroom \

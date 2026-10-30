@@ -1,10 +1,19 @@
 // Keep downstream packaging independent from upstream's Android build file.
+def tvRelease = new groovy.json.JsonSlurper().parse(new File(rootDir, "../tool/tv/release.json"))
+def tvAndroidVersionBase = (System.getenv("KAZUMI_TV_ANDROID_VERSION_BASE") ?:
+        tvRelease.androidVersionBase.toString()).toInteger()
+if (tvAndroidVersionBase <= 0 || tvAndroidVersionBase > 210000000) {
+    throw new GradleException("TV Android version base is out of range")
+}
 android {
     flavorDimensions "presentation"
     productFlavors {
         livingroom {
             dimension "presentation"
             applicationId "com.fenghaha.kazumitv"
+            // Android install sequence is TV-only. pubspec and upstream rule
+            // version/API stay unchanged; app/build.gradle adds the ABI digit.
+            versionCode tvAndroidVersionBase
         }
     }
     def signingPath = System.getenv("KAZUMI_TV_KEY_PROPERTIES")

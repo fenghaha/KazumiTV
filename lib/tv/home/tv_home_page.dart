@@ -17,6 +17,9 @@ import 'package:kazumi/tv/input/tv_text_input.dart';
 import 'package:kazumi/tv/widgets/tv_focusable.dart';
 import 'package:kazumi/tv/widgets/tv_poster.dart';
 import 'package:kazumi/tv/widgets/tv_scroll_boundary.dart';
+import 'package:kazumi/tv/update/tv_update_page.dart';
+import 'package:kazumi/tv/update/tv_update_service.dart';
+import 'package:kazumi/tv/update/tv_private_defaults.dart';
 
 enum _Destination { discover, search, calendar, library, history }
 
@@ -114,6 +117,29 @@ class _TvHomePageState extends State<TvHomePage> with RouteAware {
     _initialNavIndex = _destination.index;
     _data.addListener(_onData);
     unawaited(_data.initialize());
+    if (widget.data == null && TvUpdateService.supportedBuild) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        await retainPrivateTvDefaults();
+        final updates = TvUpdateService.instance;
+        await updates.checkAtStartup();
+        if (!mounted ||
+            _covered ||
+            ModalRoute.of(context)?.isCurrent != true ||
+            updates.available == null) {
+          return;
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('KazumiTV 有新版本 ${updates.manifest!.revision}'),
+            duration: const Duration(seconds: 8),
+            action: SnackBarAction(
+              label: '查看更新',
+              onPressed: () => showTvUpdates(context),
+            ),
+          ),
+        );
+      });
+    }
     if (widget.initialQuery.trim().isNotEmpty) {
       _searchInput.text = widget.initialQuery;
       WidgetsBinding.instance.addPostFrameCallback((_) {

@@ -44,6 +44,8 @@ class TvPlatformHandler private constructor(
     init {
         channel.setMethodCallHandler { call, result ->
             when (call.method) {
+                "getAppUpdateInfo", "verifyTvUpdateApk", "canInstallTvUpdate",
+                "openTvUpdateInstallSettings" -> TvUpdateVerifier.handle(activity, call, result)
                 "isTv" -> {
                     val manager = activity.getSystemService(Context.UI_MODE_SERVICE) as UiModeManager
                     result.success(

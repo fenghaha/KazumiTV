@@ -15,6 +15,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:kazumi/utils/device.dart';
 import 'package:kazumi/utils/version.dart';
+import 'package:kazumi/tv/update/tv_update_page.dart';
+import 'package:kazumi/tv/update/tv_update_service.dart';
 
 enum InstallationType {
   windowsMsix('MSIX'),
@@ -168,6 +170,10 @@ class AutoUpdater {
   }
 
   Future<void> autoCheckForUpdates() async {
+    if (TvUpdateService.supportedBuild) {
+      await TvUpdateService.instance.checkAtStartup();
+      return;
+    }
     final autoUpdate = GStorage.getSetting(SettingsKeys.autoUpdate);
     if (!autoUpdate) return;
 
@@ -182,6 +188,10 @@ class AutoUpdater {
   }
 
   Future<void> manualCheckForUpdates() async {
+    if (TvUpdateService.supportedBuild) {
+      await showTvUpdates();
+      return;
+    }
     try {
       final updateInfo = await checkForUpdates();
       if (updateInfo != null) {

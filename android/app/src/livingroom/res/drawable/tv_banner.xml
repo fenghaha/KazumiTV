@@ -1,7 +1,2 @@
-<vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="320dp" android:height="180dp"
-    android:viewportWidth="320" android:viewportHeight="180">
-    <path android:fillColor="#101C2C" android:pathData="M0,0h320v180h-320z" />
-    <path android:fillColor="#1C2C41" android:pathData="M24,24h272v132h-272z" />
-    <path android:fillColor="#EBC889" android:pathData="M128,54L128,126L194,90z" />
-</vector>
+<bitmap xmlns:android="http://schemas.android.com/apk/res/android"
+    android:src="@drawable/tv_banner_art" android:gravity="fill" />
